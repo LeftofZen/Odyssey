@@ -1,7 +1,9 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
 using MonoGame.ImGui;
 using Noise;
 using System;
@@ -9,6 +11,24 @@ using System.Collections.Generic;
 
 namespace MonogameTest1
 {
+	public interface IEntity
+	{
+		Vector2 GetPosition();
+		Vector2 GetSize();
+
+		string GetName();
+	}
+
+	// I know XNA/Monogame has some kind of GameServices like this with components, need to look that up
+	// to implement this pattern correctly and avoid rewriting code
+	public static class GameServices
+	{
+		public static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>(); // TextureCollection??
+		public static readonly Dictionary<string, SpriteFont> Fonts = new Dictionary<string, SpriteFont>(); //
+		public static readonly Dictionary<string, SoundEffect> SoundEffects = new Dictionary<string, SoundEffect>(); // SoundBank??
+		public static readonly Dictionary<string, Song> Songs = new Dictionary<string, Song>(); // SongCollection??
+	}
+
 	/// <summary>
 	/// This is the main type for your game.
 	/// </summary>
@@ -16,8 +36,6 @@ namespace MonogameTest1
 	{
 		readonly GraphicsDeviceManager graphics;
 		SpriteBatch sb;
-		readonly Dictionary<string, Texture2D> texLookup = new Dictionary<string, Texture2D>();
-		readonly Dictionary<string, SpriteFont> fontLookup = new Dictionary<string, SpriteFont>();
 		const int initialMapWidth = 32;
 		const int initialMapHeight = 32;
 		const int tileSize = 32;
@@ -33,12 +51,15 @@ namespace MonogameTest1
 
 		MouseState previousMouseState;
 
+		float volume = 0.2f;
+
 		public ImGUIRenderer GuiRenderer; //This is the ImGuiRenderer
 
 		Player player1 = new Player();
 		Camera camera;
 		Map map;
 		List<Animal> animals;
+		Random rand = new Random();
 
 		public Game3()
 		{
@@ -69,11 +90,26 @@ namespace MonogameTest1
 			// character
 			player1.Position = new Vector2(map.Width * tileSize / 2, map.Height * tileSize / 2);
 			player1.MoveSpeed = 4f;
-
+			player1.Name = "Left of Zen";
 
 			// entities
 			animals = new List<Animal>();
-			animals.Add(new Animal { Position = player1.Position, MoveSpeed = 3f });
+			// player pet doggy
+			animals.Add(new Animal { Position = player1.Position, MoveSpeed = 3f, Name = "Fluffy", AnimalType = AnimalType.Dog, TargetDistanceTolerance=16 });
+
+			var animalCount = 20;
+			for (var i = 0; i < animalCount; i++)
+			{
+				var rnd = rand.Next(1, 3);
+				var type = (AnimalType)rnd;
+				animals.Add(new Animal
+				{
+					Position = player1.Position + new Vector2(rand.Next(-1024, 1024), rand.Next(-1024, 1024)),
+					MoveSpeed = 4f,
+					Name = $"{type}-{i}",
+					AnimalType = type
+				});
+			}
 
 			// camera
 			camera = new Camera(GraphicsDevice.Viewport);
@@ -100,25 +136,33 @@ namespace MonogameTest1
 			var texNames = new List<string> { "terrain", "char", "ui", "animals" };
 			foreach (var v in texNames)
 			{
-				texLookup.Add(v, Content.Load<Texture2D>("textures\\" + v));
-			}
-
-			player1.Texture = texLookup["char"];
-			map.Texture = texLookup["terrain"];
-			foreach (var a in animals)
-			{
-				a.Texture = texLookup["animals"];
+				GameServices.Textures.Add(v, Content.Load<Texture2D>("textures\\" + v));
 			}
 
 			var pixel = new Texture2D(GraphicsDevice, 1, 1);
 			pixel.SetData(new Color[] { Color.White });
-			texLookup.Add(nameof(pixel), pixel);
+			GameServices.Textures.Add(nameof(pixel), pixel);
 
 			var fontNames = new List<string> { "Calibri" };
 			foreach (var v in fontNames)
 			{
-				fontLookup.Add(v, Content.Load<SpriteFont>("fonts\\" + v));
+				GameServices.Fonts.Add(v, Content.Load<SpriteFont>("fonts\\" + v));
 			}
+
+			var songNames = new List<string> { "farm_music" };
+			foreach (var v in songNames)
+			{
+				GameServices.Songs.Add(v, Content.Load<Song>("songs\\" + v));
+			}
+
+			var sfxNames = new List<string> { "dogbark", "dog2", "ponywhinny", "rooster" };
+			foreach (var v in sfxNames)
+			{
+				GameServices.SoundEffects.Add(v, Content.Load<SoundEffect>("soundeffects\\" + v));
+			}
+
+
+			MediaPlayer.Play(GameServices.Songs["farm_music"]);
 		}
 
 		private float[,] CreateNoise2D(GameTime gameTime)
@@ -202,10 +246,22 @@ namespace MonogameTest1
 
 			foreach (var a in animals)
 			{
-				a.TargetPosition = player1.Position - new Vector2(0, 24);
+				if (a.AnimalType == AnimalType.Dog)
+				{
+					a.TargetPosition = player1.Position - new Vector2(0, 24);
+				}
+				else
+				{
+					if (a.AtTarget && (int)(gameTime.TotalGameTime.TotalMilliseconds) % (3000 + 100 * a.Name.GetHashCode() % 50) == 0)
+					{
+						a.TargetPosition = player1.Position - new Vector2(0, 24) + new Vector2(rand.Next(-1024, 1024), rand.Next(-1024, 1024));
+					}
+				}
+
 				a.Update(gameTime);
 			}
 
+			MediaPlayer.Volume = volume;
 
 			// TODO: Add your update logic here
 			if (!noiseSettings.IsEqualTo(previousNoiseSettings))
@@ -262,16 +318,21 @@ namespace MonogameTest1
 			var mousePos = Mouse.GetState().Position.ToVector2();
 			mousePos = ScreenToWorldSpace(mousePos, camera.Transform);
 			DrawTileAlignedBox(mousePos, tileSize);
-			DrawTileAlignedBox(player1.Position, tileSize);
 
 			// draw animals
 			foreach (var a in animals)
 			{
 				a.Draw(sb, gameTime);
+				DrawTileAlignedBox(a.Position, tileSize);
+				DrawBoundingBox(a);
+				DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, a.Position - new Vector2(0, a.Size.Y / 2), Color.White);
 			}
 
 			// draw player
 			player1.Draw(sb, gameTime);
+			DrawTileAlignedBox(player1.Position, tileSize);
+			DrawBoundingBox(player1);
+			DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, player1.Position - new Vector2(0, player1.Size.Y / 2), Color.White);
 
 			//DrawMap(sb, mapLookup["map1"]);
 			//DrawDebugString(sb, fontLookup["Calibri"], $"DrawCount={drawCount}", new Vector2(8, 8));
@@ -288,10 +349,27 @@ namespace MonogameTest1
 			position.X -= position.X % alignment;
 			position.Y -= position.Y % alignment;
 			sb.Draw(
-				texLookup["ui"],
+				GameServices.Textures["ui"],
 				position,
 				new Rectangle(0, 0, tileSize, tileSize),
-				Color.White);
+				Color.Red);
+		}
+
+		void DrawBoundingBox(IEntity entity)
+		{
+			var pos = (entity.GetPosition() - (entity.GetSize() / 2)).ToPoint();
+			sb.Draw(
+				GameServices.Textures["ui"],
+				new Rectangle(pos.X, pos.Y, (int)entity.GetSize().X, (int)entity.GetSize().Y),
+				new Rectangle(0, 0, 32, 32),
+				Color.Blue);
+		}
+
+		public void DrawDebugString(SpriteBatch sb, SpriteFont sf, string str, Vector2 pos, Color color, float scale = 1f)
+		{
+			Vector2 size = sf.MeasureString(str);
+			sb.DrawString(sf, str, pos - size / 2 + Vector2.One, Color.Black, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+			sb.DrawString(sf, str, pos - size / 2, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 		}
 
 		void DrawImGui(GameTime gameTime)
@@ -315,6 +393,7 @@ namespace MonogameTest1
 
 			if (ImGui.CollapsingHeader("Player", ImGuiTreeNodeFlags.DefaultOpen))
 			{
+				ImGui.Text($"Position={player1.Name}");
 				ImGui.Text($"Position={player1.Position}");
 			}
 
@@ -324,6 +403,23 @@ namespace MonogameTest1
 				ImGui.Text($"Zoom={camera.Zoom}");
 				ImGui.Text($"VisibleArea={camera.VisibleArea}");
 				ImGui.Text($"Bounds={camera.Bounds}");
+			}
+
+			if (ImGui.CollapsingHeader("Music", ImGuiTreeNodeFlags.DefaultOpen))
+			{
+				if (ImGui.Button("Play"))
+				{
+					MediaPlayer.IsRepeating = true;
+					MediaPlayer.Play(GameServices.Songs["farm_music"]);
+				}
+				if (ImGui.Button("Stop"))
+				{
+					MediaPlayer.Stop();
+				}
+
+				_ = ImGui.SliderFloat("Volume", ref volume, 0f, 1f);
+				int currentPos = (int)MediaPlayer.PlayPosition.TotalSeconds;
+				_ = ImGui.SliderInt("Position", ref currentPos, 0, (int)GameServices.Songs["farm_music"].Duration.TotalSeconds);
 			}
 
 			if (ImGui.CollapsingHeader("Noise Settings", ImGuiTreeNodeFlags.DefaultOpen))
@@ -340,7 +436,8 @@ namespace MonogameTest1
 
 			if (ImGui.CollapsingHeader("Debug Data", ImGuiTreeNodeFlags.DefaultOpen))
 			{
-				ImGui.Text($"Animation Offset {animationOffset}");
+				//ImGui.Text($"Animation Offset={animationOffset}");
+				ImGui.Text($"GameTime.TotalGameTime.TotalMilliseconds={gameTime.TotalGameTime.TotalMilliseconds}");
 			}
 
 			GuiRenderer.EndLayout();

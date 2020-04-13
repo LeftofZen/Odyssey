@@ -11,7 +11,6 @@ namespace MonogameTest1
 	{
 		public int Width;
 		public int Height;
-		public Texture2D Texture;
 		public int TileSize;
 
 		Tile[,] Data;
@@ -91,9 +90,6 @@ namespace MonogameTest1
 
 		public void Draw(SpriteBatch sb, GameTime gameTime, Camera camera)
 		{
-			var pixel = new Texture2D(sb.GraphicsDevice, 1, 1);
-			pixel.SetData(new Color[] { Color.White });
-
 			for (var y = 0; y < Height; y++)
 			{
 				for (var x = 0; x < Width; x++)
@@ -108,10 +104,11 @@ namespace MonogameTest1
 						camera.VisibleArea.Y - TileSize,
 						camera.VisibleArea.Width + 2 * TileSize,
 						camera.VisibleArea.Height + 2 * TileSize);
+
 					if (safeCamera.Contains(dstRect))
 					{
-						//sb.Draw(pixel, new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize), srcRect, Data[x, y].Colour);
-						sb.Draw(Texture, dstRect, srcRect, Color.White);
+						//sb.Draw(GameServices.Textures["pixel"];, new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize), srcRect, Data[x, y].Colour);
+						sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, Color.White);
 					}
 				}
 			}

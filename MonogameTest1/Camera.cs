@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace MonogameTest1
 {
@@ -21,8 +22,9 @@ namespace MonogameTest1
 			Position = Vector2.Zero;
 		}
 
-		public float MaxZoom = 10f;
-		public float MinZoom = 0.1f;
+		public float MaxZoom = 1f * 8f;
+		public float MinZoom = 1f / 8f;
+		public int ZoomLevel = 0;
 
 		private void UpdateVisibleArea()
 		{
@@ -64,9 +66,9 @@ namespace MonogameTest1
 			Position = movePosition;
 		}
 
-		public void AdjustZoom(float zoomAmount)
+		public void AdjustZoom()
 		{
-			Zoom += zoomAmount;
+			Zoom = (float)Math.Pow(Math.Sqrt(2), ZoomLevel);
 			Zoom = MathHelper.Clamp(Zoom, MinZoom, MaxZoom);
 		}
 
@@ -103,12 +105,14 @@ namespace MonogameTest1
 
 			if (currentMouseWheelValue > previousMouseWheelValue)
 			{
-				AdjustZoom(0.2f * Zoom);
+				ZoomLevel++;
+				AdjustZoom();
 			}
 
 			if (currentMouseWheelValue < previousMouseWheelValue)
 			{
-				AdjustZoom(0.2f * -Zoom);
+				ZoomLevel--;
+				AdjustZoom();
 			}
 
 			previousZoom = zoom;

@@ -23,6 +23,36 @@
 #begin Maps/map1.json
 /copy:Maps/map1.json
 
+#begin Songs/farm_music.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:Songs/farm_music.mp3
+
+#begin SoundEffects/dog2.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:SoundEffects/dog2.wav
+
+#begin SoundEffects/dogbark.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:SoundEffects/dogbark.wav
+
+#begin SoundEffects/ponywhinny.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:SoundEffects/ponywhinny.wav
+
+#begin SoundEffects/rooster.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:SoundEffects/rooster.wav
+
 #begin Textures/animals.png
 /importer:TextureImporter
 /processor:TextureProcessor

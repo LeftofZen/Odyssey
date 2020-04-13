@@ -5,14 +5,13 @@ using System;
 
 namespace MonogameTest1
 {
-	class Player
+	class Player : IEntity
 	{
 		public Vector2 Position;
+		public Vector2 Size = new Vector2(24, 32);
 		public Vector2 Direction;
 		public float MoveSpeed;
-		public Texture2D Texture;
-
-		Point tilesize = new Point(24, 32);
+		public string Name;
 
 		public void Update(GameTime gameTime)
 		{
@@ -48,10 +47,15 @@ namespace MonogameTest1
 
 		public void Draw(SpriteBatch sb, GameTime gameTime)
 		{
-			sb.Draw(Texture,
-				Position - new Vector2(tilesize.X / 2, tilesize.Y / 2),
-				new Rectangle(72, 64, tilesize.X, tilesize.Y),
+			sb.Draw(GameServices.Textures["char"],
+				Position - new Vector2(Size.X / 2, Size.Y / 2),
+				new Rectangle(72, 64, (int)Size.X, (int)Size.Y),
 				Color.White);
 		}
+
+		public Vector2 GetPosition() => Position;
+		public Vector2 GetSize() => Size;
+
+		public string GetName() => Name;
 	}
 }
