@@ -57,5 +57,7 @@ namespace MonogameTest1
 		public Vector2 GetSize() => Size;
 
 		public string GetName() => Name;
+		public float GetMovementSpeed() => MoveSpeed;
+		public void SetPosition(Vector2 pos) => Position = pos;
 	}
 }

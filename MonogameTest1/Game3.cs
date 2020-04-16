@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using MonoGame.ImGui;
+using Newtonsoft.Json.Schema;
 using Noise;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,11 @@ namespace MonogameTest1
 		Vector2 GetPosition();
 		Vector2 GetSize();
 
+		float GetMovementSpeed();
+
 		string GetName();
+
+		void SetPosition(Vector2 pos);
 	}
 
 	// I know XNA/Monogame has some kind of GameServices like this with components, need to look that up
@@ -43,15 +48,10 @@ namespace MonogameTest1
 		NoiseParams noiseSettings { get; set; } = new NoiseParams();
 		NoiseParams previousNoiseSettings { get; set; } = new NoiseParams();
 		bool isFullScreen = false;
-		bool animate = true;
-		Vector2 animationOffset = Vector2.Zero;
-		float animationSpeed = 1f;
-		float animationDirection = 0f;
-		OpenSimplexNoise osNoise;
 
 		MouseState previousMouseState;
-
-		float volume = 0.2f;
+		float volume = 0.5f;
+		Vector2 pos2 = Vector2.Zero;
 
 		public ImGUIRenderer GuiRenderer; //This is the ImGuiRenderer
 
@@ -83,8 +83,7 @@ namespace MonogameTest1
 			IsMouseVisible = true;
 
 			// world
-			osNoise = new OpenSimplexNoise(0);
-			map = new Map(initialMapWidth, initialMapHeight, CreateNoise2D(null));
+			map = new Map(initialMapWidth, initialMapHeight, CreateNoise2D(noiseSettings));
 			map.TileSize = 32;
 
 			// character
@@ -95,21 +94,23 @@ namespace MonogameTest1
 			// entities
 			animals = new List<Animal>();
 			// player pet doggy
-			animals.Add(new Animal { Position = player1.Position, MoveSpeed = 3f, Name = "Fluffy", AnimalType = AnimalType.Dog, TargetDistanceTolerance=16 });
+			var pet = new Animal { Position = player1.Position, MoveSpeed = 3f, Name = "Fluffy", AnimalType = AnimalType.Dog };
+			pet.Behaviours.Add(new FollowBehaviour { Target = player1 });
+			animals.Add(pet);
 
-			var animalCount = 20;
-			for (var i = 0; i < animalCount; i++)
-			{
-				var rnd = rand.Next(1, 3);
-				var type = (AnimalType)rnd;
-				animals.Add(new Animal
-				{
-					Position = player1.Position + new Vector2(rand.Next(-1024, 1024), rand.Next(-1024, 1024)),
-					MoveSpeed = 4f,
-					Name = $"{type}-{i}",
-					AnimalType = type
-				});
-			}
+			//var animalCount = 20;
+			//for (var i = 0; i < animalCount; i++)
+			//{
+			//	var rnd = rand.Next(1, 3);
+			//	var type = (AnimalType)rnd;
+			//	animals.Add(new Animal
+			//	{
+			//		Position = player1.Position + new Vector2(rand.Next(-1024, 1024), rand.Next(-1024, 1024)),
+			//		MoveSpeed = 4f,
+			//		Name = $"{type}-{i}",
+			//		AnimalType = type
+			//	});
+			//}
 
 			// camera
 			camera = new Camera(GraphicsDevice.Viewport);
@@ -161,20 +162,13 @@ namespace MonogameTest1
 				GameServices.SoundEffects.Add(v, Content.Load<SoundEffect>("soundeffects\\" + v));
 			}
 
-
-			MediaPlayer.Play(GameServices.Songs["farm_music"]);
+			//MediaPlayer.Play(GameServices.Songs["farm_music"]);
 		}
 
-		private float[,] CreateNoise2D(GameTime gameTime)
+		private static float[,] CreateNoise2D(NoiseParams noiseSettings)
 		{
+			var noise = new OpenSimplexNoise(noiseSettings.Seed);
 			var data = new float[noiseSettings.NoiseSize, noiseSettings.NoiseSize];
-			if (animate)
-			{
-				var dir = new Vector2((float)Math.Cos(animationDirection), (float)Math.Sin(animationDirection));
-				dir.Normalize();
-				animationOffset += dir * new Vector2(0.01f * animationSpeed);
-			}
-
 			for (var y = 0; y < data.GetLength(1); y++)
 			{
 				for (var x = 0; x < data.GetLength(0); x++)
@@ -183,12 +177,12 @@ namespace MonogameTest1
 					var frequency = noiseSettings.InitialFrequency;
 					var totalAmplitude = 0f;
 					var total = 0f;
-					var xEval = x + noiseSettings.Offset.X + animationOffset.X;
-					var yEval = y + noiseSettings.Offset.Y + animationOffset.Y;
+					var xEval = x + noiseSettings.Offset.X;
+					var yEval = y + noiseSettings.Offset.Y;
 
 					for (var o = 1; o < noiseSettings.Octaves + 1; o++)
 					{
-						var noisev = (float)osNoise.Evaluate(xEval * frequency, yEval * frequency);
+						var noisev = (float)noise.Evaluate(xEval * frequency, yEval * frequency);
 
 						// [[-1, 1] -> [0, 1]
 						noisev = (noisev + 1) / 2;
@@ -246,17 +240,17 @@ namespace MonogameTest1
 
 			foreach (var a in animals)
 			{
-				if (a.AnimalType == AnimalType.Dog)
-				{
-					a.TargetPosition = player1.Position - new Vector2(0, 24);
-				}
-				else
-				{
-					if (a.AtTarget && (int)(gameTime.TotalGameTime.TotalMilliseconds) % (3000 + 100 * a.Name.GetHashCode() % 50) == 0)
-					{
-						a.TargetPosition = player1.Position - new Vector2(0, 24) + new Vector2(rand.Next(-1024, 1024), rand.Next(-1024, 1024));
-					}
-				}
+				//if (a.AnimalType == AnimalType.Dog)
+				//{
+				//	a.TargetPosition = player1.Position - new Vector2(0, 24);
+				//}
+				//else
+				//{
+				//	if (a.AtTarget && (int)(gameTime.TotalGameTime.TotalMilliseconds) % (3000 + 100 * a.Name.GetHashCode() % 50) == 0)
+				//	{
+				//		a.TargetPosition = player1.Position - new Vector2(0, 24) + new Vector2(rand.Next(-1024, 1024), rand.Next(-1024, 1024));
+				//	}
+				//}
 
 				a.Update(gameTime);
 			}
@@ -266,7 +260,7 @@ namespace MonogameTest1
 			// TODO: Add your update logic here
 			if (!noiseSettings.IsEqualTo(previousNoiseSettings))
 			{
-				map.SetData(CreateNoise2D(gameTime));
+				map.SetData(CreateNoise2D(noiseSettings));
 				previousNoiseSettings.Set(noiseSettings);
 			}
 
@@ -288,31 +282,12 @@ namespace MonogameTest1
 		/// <param name="gameTime">Provides a snapshot of timing values.</param>
 		protected override void Draw(GameTime gameTime)
 		{
-			GraphicsDevice.Clear(Color.CornflowerBlue);
+			GraphicsDevice.Clear(Color.SteelBlue);
 
 			sb.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, camera.Transform);
-			//sb.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, null);
-
-			//sb.Draw(texLookup["pixel"], new Vector2(200, 200), Color.White);
-			//sb.Draw(texLookup["noiseTex"], new Rectangle(0, 0, 1024, 1024), null, Color.White);
 
 			// draw world
 			map.Draw(sb, gameTime, camera);
-
-			// cursor highlighting for camera
-			//var mousePosScreen = Mouse.GetState().Position.ToVector2();
-			//var mousePosWorld = ScreenToWorldSpace(mousePosScreen, camera.Transform);
-			//var mouseWorldPosPoint = mousePosWorld.ToPoint();
-			//var scaling = tileSize / worldScaling;
-			//if (scaling == 0) scaling = tileSize;
-			//mouseWorldPosPoint.X -= mouseWorldPosPoint.X % scaling;
-			//mouseWorldPosPoint.Y -= mouseWorldPosPoint.Y % scaling;
-			//var scaled = 32 / worldScaling;
-			//sb.Draw(
-			//	texLookup["ui"],
-			//	new Rectangle(mouseWorldPosPoint, new Point(scaled, scaled)),
-			//	new Rectangle(0, 0, scaled, scaled),
-			//	Color.White);
 
 			// draw highlighted tile
 			var mousePos = Mouse.GetState().Position.ToVector2();
@@ -325,18 +300,33 @@ namespace MonogameTest1
 				a.Draw(sb, gameTime);
 				DrawTileAlignedBox(a.Position, tileSize);
 				DrawBoundingBox(a);
-				DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, a.Position - new Vector2(0, a.Size.Y / 2), Color.White);
+				if (camera.Zoom >= 1)
+					DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, a.Position - new Vector2(0, a.Size.Y / 2), Color.White);
 			}
 
 			// draw player
 			player1.Draw(sb, gameTime);
 			DrawTileAlignedBox(player1.Position, tileSize);
 			DrawBoundingBox(player1);
-			DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, player1.Position - new Vector2(0, player1.Size.Y / 2), Color.White);
+			if (camera.Zoom >= 1)
+				DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, player1.Position - new Vector2(0, player1.Size.Y / 2), Color.White);
 
 			//DrawMap(sb, mapLookup["map1"]);
 			//DrawDebugString(sb, fontLookup["Calibri"], $"DrawCount={drawCount}", new Vector2(8, 8));
 			//sb.Draw(texLookup["terrain"], Vector2.Zero, Color.White);
+			sb.End();
+
+			// non-camera things, ie ui things
+			sb.Begin();
+			if (camera.Zoom < 1)
+			{
+				foreach (var a in animals)
+				{
+					DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, Vector2.Transform(a.Position - new Vector2(0, a.Size.Y / 2), camera.Transform), Color.White);
+				}
+
+				DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, Vector2.Transform(player1.Position - new Vector2(0, player1.Size.Y / 2), camera.Transform), Color.White);
+			}
 			sb.End();
 
 			base.Draw(gameTime);
@@ -393,8 +383,18 @@ namespace MonogameTest1
 
 			if (ImGui.CollapsingHeader("Player", ImGuiTreeNodeFlags.DefaultOpen))
 			{
-				ImGui.Text($"Position={player1.Name}");
+				ImGui.Text($"Name={player1.Name}");
 				ImGui.Text($"Position={player1.Position}");
+				ImGui.Text($"ScreenPosition={pos2}");
+			}
+
+			if (ImGui.CollapsingHeader("Animals", ImGuiTreeNodeFlags.DefaultOpen))
+			{
+				foreach (var v in animals)
+				{
+					ImGui.Text($"Name={v.Name}");
+					ImGui.Text($"Position={v.Position}");
+				}
 			}
 
 			if (ImGui.CollapsingHeader("Camera", ImGuiTreeNodeFlags.DefaultOpen))

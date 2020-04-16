@@ -9,6 +9,7 @@ namespace MonogameTest1
 {
 	class NoiseParams
 	{
+		public int Seed = 0;
 		public int Octaves = 8;
 		public float Lacunarity = 3f;
 		public float Persistence = 0.5f;
@@ -19,7 +20,8 @@ namespace MonogameTest1
 
 		public bool IsEqualTo(NoiseParams ns)
 		{
-			return Octaves == ns.Octaves
+			return Seed == ns.Seed
+				&& Octaves == ns.Octaves
 				&& Lacunarity == ns.Lacunarity
 				&& Persistence == ns.Persistence
 				&& InitialAmplitude == ns.InitialAmplitude
@@ -30,6 +32,7 @@ namespace MonogameTest1
 
 		public void Set(NoiseParams ns)
 		{
+			Seed = ns.Seed;
 			Octaves = ns.Octaves;
 			Lacunarity = ns.Lacunarity;
 			Persistence = ns.Persistence;
