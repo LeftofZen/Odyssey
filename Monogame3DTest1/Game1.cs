@@ -71,16 +71,16 @@ namespace Monogame3DTest1
 				2, 3, 0,
 
 				// back
-				5, 7, 6,
-				5, 6, 4,
+				6, 7, 5,
+				4, 6, 5,
 
 				//// top
 				1, 5, 7,
 				7, 2, 1,
 
 				// bottom
-				4, 0, 3,
-				3, 6, 4,
+				3, 0, 4,
+				4, 6, 3,
 
 				// left
 				4, 5, 1,
@@ -147,6 +147,16 @@ namespace Monogame3DTest1
 			{
 				camPosition.Z += camSpeed;
 				camTarget.Z += camSpeed;
+			}
+
+			if (Keyboard.GetState().IsKeyDown(Keys.Space))
+			{
+				orbit = !orbit;
+			}
+			if (orbit)
+			{
+				Matrix rotationMatrix = Matrix.CreateRotationY(MathHelper.ToRadians(1f));
+				camPosition = Vector3.Transform(camPosition, rotationMatrix);
 			}
 
 			viewMatrix = Matrix.CreateLookAt(camPosition, camTarget, Vector3.Up);
