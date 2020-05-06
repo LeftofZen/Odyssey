@@ -15,8 +15,9 @@ namespace MonogameTest1
 		public float Persistence = 0.5f;
 		public float InitialAmplitude = 1f;
 		public float InitialFrequency = 0.005f;
-		public int NoiseSize = 512;
+		public int NoiseSize = 256;
 		public Vector2 Offset = Vector2.Zero;
+		public bool UseKernel = false;
 
 		public bool IsEqualTo(NoiseParams ns)
 		{
@@ -27,7 +28,8 @@ namespace MonogameTest1
 				&& InitialAmplitude == ns.InitialAmplitude
 				&& InitialFrequency == ns.InitialFrequency
 				&& NoiseSize == ns.NoiseSize
-				&& Offset == ns.Offset;
+				&& Offset == ns.Offset
+				&& UseKernel == ns.UseKernel;
 		}
 
 		public void Set(NoiseParams ns)
@@ -40,6 +42,7 @@ namespace MonogameTest1
 			InitialFrequency = ns.InitialFrequency;
 			NoiseSize = ns.NoiseSize;
 			Offset = ns.Offset;
+			UseKernel = ns.UseKernel;
 		}
 	}
 }

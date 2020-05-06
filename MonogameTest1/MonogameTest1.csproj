@@ -48,6 +48,7 @@
     <Compile Include="Animal.cs" />
     <Compile Include="Camera.cs" />
     <Compile Include="Config.cs" />
+    <Compile Include="Erosion.cs" />
     <Compile Include="Game1.cs" />
     <Compile Include="Game2.cs" />
     <Compile Include="Game3.cs" />

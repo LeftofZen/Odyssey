@@ -9,6 +9,8 @@ using Newtonsoft.Json.Schema;
 using Noise;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace MonogameTest1
 {
@@ -201,7 +203,172 @@ namespace MonogameTest1
 				}
 			}
 
+			var dd = NormaliseNoise2D(data);
+
+			if (noiseSettings.UseKernel)
+			{
+				var identityKernel = new float[,] { { 1f } };
+				var smoothingKernel = new float[,]
+				{
+					{ 1f, 1f, 1f },
+					{ 1f, 1f, 1f },
+					{ 1f, 1f, 1f },
+				};
+
+				var sharpenKernel = new float[,]
+				{
+					{ 0f, -1f, 0f },
+					{ -1f, 5f, -1f },
+					{ 0f, -1f, 0f },
+				};
+
+				var outlineKernel = new float[,]
+				{
+					{ -1f, -1f, -1f },
+					{ -1f, 8f, -1f },
+					{ -1f, -1f, -1f },
+				};
+
+				var topSobel = new float[,]
+				{
+					{ 1f, 2f, 1f },
+					{ 0f, 0f, 0f },
+					{ -1f, -2f, -1f },
+				};
+				dd = ApplyKernel(dd, topSobel);
+			}
+
+
+			var erosion = new Erosion();
+			var dmap = To1D(dd);
+
+			//erosion.Erode(dmap, 256, 10, false);
+			dd = To2D(dmap);
+
+			var res = AddBorder(dd);
+			return res;
+		}
+
+		private static float[] To1D(float[,] data)
+		{
+			float[] result = new float[data.GetLength(0) * data.GetLength(1)];
+			for (var y = 0; y < data.GetLength(1); y++)
+			{
+				for (var x = 0; x < data.GetLength(0); x++)
+				{
+					if (float.IsNaN(data[x, y]))
+					{
+						Debugger.Break();
+					}
+					result[y * data.GetLength(0) + x] = data[x, y];
+				}
+			}
+			return result;
+		}
+		private static float[,] To2D(float[] data)
+		{
+			var size = (int)Math.Sqrt(data.Length);
+			float[,] result = new float[size, size];
+
+			for (int i = 0; i < data.Length; i++)
+			{
+				result[i % size, i / size] = data[i];
+			}
+			return result;
+		}
+
+
+		private static float[,] NormaliseNoise2D(float[,] data)
+		{
+			float min = float.MaxValue;
+			float max = float.MinValue;
+			for (var y = 0; y < data.GetLength(1); y++)
+			{
+				for (var x = 0; x < data.GetLength(0); x++)
+				{
+					min = Math.Min(min, data[x, y]);
+					max = Math.Max(max, data[x, y]);
+				}
+			}
+
+			var range = max - min;
+			var xx = 1f / range;
+
+			for (var y = 0; y < data.GetLength(1); y++)
+			{
+				for (var x = 0; x < data.GetLength(0); x++)
+				{
+					data[x, y] = (data[x, y] - min) * xx;
+				}
+			}
 			return data;
+		}
+
+		private static float[,] AddBorder(float[,] data, float borderValue = 0f)
+		{
+			// top, bottom
+			for (var x = 0; x < data.GetLength(0); x++)
+			{
+				data[x, 0] = borderValue;
+				data[x, data.GetLength(1) - 1] = borderValue;
+			}
+
+			// left, right
+			for (var y = 0; y < data.GetLength(1); y++)
+			{
+				data[0, y] = borderValue;
+				data[data.GetLength(0) - 1, y] = borderValue;
+			}
+
+			return data;
+		}
+
+		private static float[,] ApplyKernel(float[,] data, float[,] kernel)
+		{
+			float[,] tmp = new float[data.GetLength(0), data.GetLength(1)];
+			var kernelSize = kernel.GetLength(0) * kernel.GetLength(1);
+
+			var halfsizeX = kernel.GetLength(0) / 2;
+			var halfsizeY = kernel.GetLength(1) / 2;
+
+			var kernelSpotsUsed = 0;
+			for (var ky = 0; ky < kernel.GetLength(1); ky++)
+			{
+				for (var kx = 0; kx < kernel.GetLength(0); kx++)
+				{
+					if (kernel[kx, ky] != 0f)
+					{
+						kernelSpotsUsed++;
+					}
+				}
+			}
+
+			for (var y = halfsizeY; y < data.GetLength(1) - halfsizeY; y++)
+			{
+				for (var x = halfsizeX; x < data.GetLength(0) - halfsizeX; x++)
+				{
+					// apply kernel
+
+					// even size kernel
+
+					// odd size kernel
+					var tmpres = 0f;
+
+					//kernel
+					for (var ky = 0; ky < kernel.GetLength(1); ky++)
+					{
+						for (var kx = 0; kx < kernel.GetLength(0); kx++)
+						{
+							tmpres += data[x + kx - halfsizeX, y + ky - halfsizeY] * kernel[kx, ky];
+						}
+					}
+
+					tmp[x, y] = tmpres;
+				}
+			}
+
+			// can remove this normalise if we normalise tmpres above (requires getting min/max of kernel
+			return NormaliseNoise2D(tmp);
 		}
 
 		/// <summary>
@@ -379,6 +546,8 @@ namespace MonogameTest1
 			{
 				ImGui.Text($"Width={map.Width}");
 				ImGui.Text($"Height={map.Height}");
+				_ = ImGui.Checkbox($"DrawNoiseOnly={map.DrawNoiseOnly}", ref map.DrawNoiseOnly);
+				//ImGui.Checkbox($"UseColourMap={map.UseColourMap}", ref map.UseColourMap);
 			}
 
 			if (ImGui.CollapsingHeader("Player", ImGuiTreeNodeFlags.DefaultOpen))
@@ -432,6 +601,7 @@ namespace MonogameTest1
 				_ = ImGui.SliderFloat("Persistence", ref noiseSettings.Persistence, 0f, 4f);
 				_ = ImGui.SliderFloat("OffsetX", ref noiseSettings.Offset.Y, -100f, 100f);
 				_ = ImGui.SliderFloat("OffsetY", ref noiseSettings.Offset.X, -100f, 100f);
+				_ = ImGui.Checkbox($"UseKernel={noiseSettings.UseKernel}", ref noiseSettings.UseKernel);
 			}
 
 			if (ImGui.CollapsingHeader("Debug Data", ImGuiTreeNodeFlags.DefaultOpen))

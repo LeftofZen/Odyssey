@@ -15,6 +15,10 @@ namespace MonogameTest1
 
 		Tile[,] Data;
 
+
+		public bool DrawNoiseOnly = true;
+		public bool UseColourMap = false;
+
 		public Map(int width, int height)
 		{
 			InitialiseMap(width, height);
@@ -32,6 +36,7 @@ namespace MonogameTest1
 				for (var x = 0; x < Width; x++)
 				{
 					Data[x, y] = new Tile();
+					Data[x, y].UseColourMap = this.UseColourMap;
 				}
 			}
 		}
@@ -94,21 +99,27 @@ namespace MonogameTest1
 			{
 				for (var x = 0; x < Width; x++)
 				{
-					//sb.Draw(pixel, new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize), null, Data[x,y].Colour);
-
-					var srcRect = Data[x, y].MapRect;
-					var dstRect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
-
-					var safeCamera = new Rectangle(
-						camera.VisibleArea.X - TileSize,
-						camera.VisibleArea.Y - TileSize,
-						camera.VisibleArea.Width + 2 * TileSize,
-						camera.VisibleArea.Height + 2 * TileSize);
-
-					if (safeCamera.Contains(dstRect))
+					if (DrawNoiseOnly)
 					{
-						//sb.Draw(GameServices.Textures["pixel"];, new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize), srcRect, Data[x, y].Colour);
-						sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, Color.White);
+						sb.Draw(GameServices.Textures["pixel"], new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize), null, Data[x, y].Colour);
+					}
+					else
+					{
+						var srcRect = Data[x, y].MapRect;
+						var dstRect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
+
+						var safeCamera = new Rectangle(
+							camera.VisibleArea.X - TileSize,
+							camera.VisibleArea.Y - TileSize,
+							camera.VisibleArea.Width + 2 * TileSize,
+							camera.VisibleArea.Height + 2 * TileSize);
+
+						if (safeCamera.Contains(dstRect))
+						{
+							//sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, Data[x, y].Colour);
+							var grey = Data[x, y].value / 2f + 0.5f;
+							sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, new Color(grey, grey, grey));
+						}
 					}
 				}
 			}
@@ -126,20 +137,29 @@ namespace MonogameTest1
 			set
 			{
 				this.value = value;
-				Colour = ColourMap[Map(value)];
+				if (UseColourMap)
+				{
+					Colour = ColourMap[Map(value)];
+				}
+				else
+				{
+					Colour = new Color(value, value, value);
+				}
 			}
 		}
-		float value;
+		public float value;
+
+		public bool UseColourMap { get; set; } = false;
 
 		public Rectangle MapRect => SpriteMap[Map(value)];
 
 		public TileType Map(float value)
 		{
-			if (value < 0.4f) return TileType.Water;
-			if (value < 0.5f) return TileType.Sand;
+			if (value < 0.4f) return TileType.Mountain;
+			if (value < 0.5f) return TileType.Forest;
 			if (value < 0.6f) return TileType.Grass;
-			if (value < 0.7f) return TileType.Forest;
-			if (value < 1.0f) return TileType.Mountain;
+			if (value < 0.7f) return TileType.Sand;
+			if (value < 1.0f) return TileType.Water;
 			return TileType.Snow;
 		}
 

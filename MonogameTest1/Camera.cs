@@ -18,12 +18,13 @@ namespace MonogameTest1
 		public Camera(Viewport viewport)
 		{
 			Bounds = viewport.Bounds;
-			Zoom = 1f;
+			//Zoom = 1f;
+			Zoom = 0.125f;
 			Position = Vector2.Zero;
 		}
 
 		public float MaxZoom = 1f * 8f;
-		public float MinZoom = 1f / 8f;
+		public float MinZoom = 1f / 32f;
 		public int ZoomLevel = 0;
 
 		private void UpdateVisibleArea()
