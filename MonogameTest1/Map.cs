@@ -2,8 +2,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Xml.Serialization;
 
 namespace MonogameTest1
 {
@@ -41,21 +39,21 @@ namespace MonogameTest1
 			}
 		}
 
-		public Map(int width, int height, float[] data) : this(width, height)
+		public Map(int width, int height, double[] data) : this(width, height)
 		{
 			SetData(data);
 		}
 
-		public Map(int width, int height, float[,] data) : this(width, height)
+		public Map(int width, int height, double[,] data) : this(width, height)
 		{
 			SetData(data);
 		}
-		public Map(float[,] data)
+		public Map(double[,] data)
 		{
 			SetData(data);
 		}
 
-		public void SetData(float[,] data)
+		public void SetData(double[,] data)
 		{
 			if (data.Length != Width * Height)
 			{
@@ -73,7 +71,7 @@ namespace MonogameTest1
 			}
 		}
 
-		public void SetData(float[] data)
+		public void SetData(double[] data)
 		{
 			if (data.Length != Width * Height)
 			{
@@ -117,7 +115,7 @@ namespace MonogameTest1
 						if (safeCamera.Contains(dstRect))
 						{
 							//sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, Data[x, y].Colour);
-							var grey = Data[x, y].value / 2f + 0.5f;
+							var grey = (float)(Data[x, y].value / 2.0 + 0.5);
 							sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, new Color(grey, grey, grey));
 						}
 					}
@@ -132,7 +130,7 @@ namespace MonogameTest1
 	class Tile
 	{
 		// to port from noise map
-		public float Value
+		public double Value
 		{
 			set
 			{
@@ -143,23 +141,23 @@ namespace MonogameTest1
 				}
 				else
 				{
-					Colour = new Color(value, value, value);
+					Colour = new Color((float)value, (float)value, (float)value);
 				}
 			}
 		}
-		public float value;
+		public double value;
 
 		public bool UseColourMap { get; set; } = false;
 
 		public Rectangle MapRect => SpriteMap[Map(value)];
 
-		public TileType Map(float value)
+		public TileType Map(double value)
 		{
-			if (value < 0.4f) return TileType.Mountain;
-			if (value < 0.5f) return TileType.Forest;
-			if (value < 0.6f) return TileType.Grass;
-			if (value < 0.7f) return TileType.Sand;
-			if (value < 1.0f) return TileType.Water;
+			if (value < 0.4) return TileType.Mountain;
+			if (value < 0.5) return TileType.Forest;
+			if (value < 0.6) return TileType.Grass;
+			if (value < 0.7) return TileType.Sand;
+			if (value < 1.0) return TileType.Water;
 			return TileType.Snow;
 		}
 

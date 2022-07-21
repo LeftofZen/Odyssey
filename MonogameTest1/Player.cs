@@ -7,7 +7,14 @@ namespace MonogameTest1
 {
 	class Player : IEntity
 	{
-		public Vector2 Position;
+		// IKinematics
+		public Vector2 _position;
+		public Vector2 _velocity;
+		public Vector2 _acceleration;
+		public Vector2 Position { get => _position; set => _position = value; }
+		public Vector2 Velocity { get => _velocity; set => _velocity = value; }
+		public Vector2 Acceleration { get => _acceleration; set => _acceleration = value; }
+
 		public Vector2 Size = new Vector2(24, 32);
 		public Vector2 Direction;
 		public float MoveSpeed;
@@ -15,6 +22,8 @@ namespace MonogameTest1
 
 		public void Update(GameTime gameTime)
 		{
+			UpdateKinematics(gameTime);
+
 			var speedModifier = 1f;
 
 			if (Keyboard.GetState().IsKeyDown(Keys.RightShift))
@@ -26,22 +35,22 @@ namespace MonogameTest1
 
 			if (Keyboard.GetState().IsKeyDown(Keys.Up))
 			{
-				Position.Y += -speed;
+				_position.Y += -speed;
 			}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.Down))
 			{
-				Position.Y += speed;
+				_position.Y += speed;
 			}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.Left))
 			{
-				Position.X += -speed;
+				_position.X += -speed;
 			}
 
 			if (Keyboard.GetState().IsKeyDown(Keys.Right))
 			{
-				Position.X += speed;
+				_position.X += speed;
 			}
 		}
 
@@ -57,7 +66,16 @@ namespace MonogameTest1
 		public Vector2 GetSize() => Size;
 
 		public string GetName() => Name;
-		public float GetMovementSpeed() => MoveSpeed;
+		public float GetAcceleration() => MoveSpeed;
 		public void SetPosition(Vector2 pos) => Position = pos;
+
+		public void UpdateKinematics(GameTime gameTime)
+		{
+			Velocity += Acceleration;
+			Position += Velocity;
+
+			Acceleration = Vector2.Zero; // arresting
+			Velocity *= 0.95f; // damping
+		}
 	}
 }

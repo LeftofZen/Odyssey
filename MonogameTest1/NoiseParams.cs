@@ -18,6 +18,9 @@ namespace MonogameTest1
 		public int NoiseSize = 256;
 		public Vector2 Offset = Vector2.Zero;
 		public bool UseKernel = false;
+		public float Redistribution = 1f;
+		public bool UseTerracing = false;
+		public int TerraceCount = 10;
 
 		public bool IsEqualTo(NoiseParams ns)
 		{
@@ -29,7 +32,10 @@ namespace MonogameTest1
 				&& InitialFrequency == ns.InitialFrequency
 				&& NoiseSize == ns.NoiseSize
 				&& Offset == ns.Offset
-				&& UseKernel == ns.UseKernel;
+				&& UseKernel == ns.UseKernel
+				&& Redistribution == ns.Redistribution
+				&& UseTerracing == ns.UseTerracing
+				&& TerraceCount == ns.TerraceCount;
 		}
 
 		public void Set(NoiseParams ns)
@@ -43,6 +49,9 @@ namespace MonogameTest1
 			NoiseSize = ns.NoiseSize;
 			Offset = ns.Offset;
 			UseKernel = ns.UseKernel;
+			Redistribution = ns.Redistribution;
+			UseTerracing = ns.UseTerracing;
+			TerraceCount = ns.TerraceCount;
 		}
 	}
 }

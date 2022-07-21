@@ -5,26 +5,35 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using MonoGame.ImGui;
-using Newtonsoft.Json.Schema;
 using Noise;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace MonogameTest1
 {
-	public interface IEntity
+	public interface IKinematics
 	{
-		Vector2 GetPosition();
+		Vector2 Position { get; set; }
+		Vector2 Velocity { get; set; }
+		Vector2 Acceleration { get; set; }
+
+		void UpdateKinematics(GameTime gameTime);
+	}
+
+	public interface IEntity : IKinematics
+	{
+		//Vector2 GetPosition();
 		Vector2 GetSize();
 
-		float GetMovementSpeed();
+		float GetAcceleration();
 
 		string GetName();
 
-		void SetPosition(Vector2 pos);
+		//void SetPosition(Vector2 pos);
 	}
+
+
 
 	// I know XNA/Monogame has some kind of GameServices like this with components, need to look that up
 	// to implement this pattern correctly and avoid rewriting code
@@ -34,6 +43,7 @@ namespace MonogameTest1
 		public static readonly Dictionary<string, SpriteFont> Fonts = new Dictionary<string, SpriteFont>(); //
 		public static readonly Dictionary<string, SoundEffect> SoundEffects = new Dictionary<string, SoundEffect>(); // SoundBank??
 		public static readonly Dictionary<string, Song> Songs = new Dictionary<string, Song>(); // SongCollection??
+		public static InputManager InputManager;
 	}
 
 	/// <summary>
@@ -70,6 +80,7 @@ namespace MonogameTest1
 			graphics.PreferredBackBufferHeight = 1080;
 
 			Content.RootDirectory = "Content";
+			GameServices.InputManager = new InputManager(this);
 		}
 
 		/// <summary>
@@ -96,7 +107,7 @@ namespace MonogameTest1
 			// entities
 			animals = new List<Animal>();
 			// player pet doggy
-			var pet = new Animal { Position = player1.Position, MoveSpeed = 3f, Name = "Fluffy", AnimalType = AnimalType.Dog };
+			var pet = new Animal { Position = player1.Position, AccelerationSpeed = 0.2f, Name = "Fluffy", AnimalType = AnimalType.Dog };
 			pet.Behaviours.Add(new FollowBehaviour { Target = player1 });
 			animals.Add(pet);
 
@@ -167,24 +178,24 @@ namespace MonogameTest1
 			//MediaPlayer.Play(GameServices.Songs["farm_music"]);
 		}
 
-		private static float[,] CreateNoise2D(NoiseParams noiseSettings)
+		private static double[,] CreateNoise2D(NoiseParams noiseSettings)
 		{
 			var noise = new OpenSimplexNoise(noiseSettings.Seed);
-			var data = new float[noiseSettings.NoiseSize, noiseSettings.NoiseSize];
+			var data = new double[noiseSettings.NoiseSize, noiseSettings.NoiseSize];
 			for (var y = 0; y < data.GetLength(1); y++)
 			{
 				for (var x = 0; x < data.GetLength(0); x++)
 				{
-					var amplitude = noiseSettings.InitialAmplitude;
-					var frequency = noiseSettings.InitialFrequency;
-					var totalAmplitude = 0f;
-					var total = 0f;
+					var amplitude = (double)noiseSettings.InitialAmplitude;
+					var frequency = (double)noiseSettings.InitialFrequency;
+					var totalAmplitude = 0.0;
+					var total = 0.0;
 					var xEval = x + noiseSettings.Offset.X;
 					var yEval = y + noiseSettings.Offset.Y;
 
-					for (var o = 1; o < noiseSettings.Octaves + 1; o++)
+					for (var o = 0; o < noiseSettings.Octaves; o++)
 					{
-						var noisev = (float)noise.Evaluate(xEval * frequency, yEval * frequency);
+						var noisev = noise.Evaluate(xEval * frequency, yEval * frequency);
 
 						// [[-1, 1] -> [0, 1]
 						noisev = (noisev + 1) / 2;
@@ -196,6 +207,15 @@ namespace MonogameTest1
 						frequency *= noiseSettings.Lacunarity;
 					}
 
+					//total = Math.Pow(total, total * 5);
+					total = Math.Pow(total, noiseSettings.Redistribution);
+
+					//terraces
+					if (noiseSettings.UseTerracing)
+					{
+						total = Math.Round(total * noiseSettings.TerraceCount);
+					}
+
 					// normalise
 					total /= totalAmplitude;
 
@@ -204,59 +224,59 @@ namespace MonogameTest1
 			}
 
 			var dd = NormaliseNoise2D(data);
+			//var dd = data;
 
 			if (noiseSettings.UseKernel)
 			{
-				var identityKernel = new float[,] { { 1f } };
-				var smoothingKernel = new float[,]
+				var identityKernel = new double[,] { { 1f } };
+				var smoothingKernel = new double[,]
 				{
 					{ 1f, 1f, 1f },
 					{ 1f, 1f, 1f },
 					{ 1f, 1f, 1f },
 				};
 
-				var sharpenKernel = new float[,]
+				var sharpenKernel = new double[,]
 				{
 					{ 0f, -1f, 0f },
 					{ -1f, 5f, -1f },
 					{ 0f, -1f, 0f },
 				};
 
-				var outlineKernel = new float[,]
+				var outlineKernel = new double[,]
 				{
 					{ -1f, -1f, -1f },
 					{ -1f, 8f, -1f },
 					{ -1f, -1f, -1f },
 				};
 
-				var topSobel = new float[,]
+				var topSobel = new double[,]
 				{
 					{ 1f, 2f, 1f },
 					{ 0f, 0f, 0f },
 					{ -1f, -2f, -1f },
 				};
-				dd = ApplyKernel(dd, topSobel);
+				dd = ApplyKernel(dd, smoothingKernel);
 			}
 
 
-			var erosion = new Erosion();
-			var dmap = To1D(dd);
-
+			//var erosion = new Erosion();
+			//var dmap = To1D(dd);
 			//erosion.Erode(dmap, 256, 10, false);
-			dd = To2D(dmap);
+			//dd = To2D(dmap);
 
 			var res = AddBorder(dd);
 			return res;
 		}
 
-		private static float[] To1D(float[,] data)
+		private static double[] To1D(double[,] data)
 		{
-			float[] result = new float[data.GetLength(0) * data.GetLength(1)];
+			double[] result = new double[data.GetLength(0) * data.GetLength(1)];
 			for (var y = 0; y < data.GetLength(1); y++)
 			{
 				for (var x = 0; x < data.GetLength(0); x++)
 				{
-					if (float.IsNaN(data[x, y]))
+					if (double.IsNaN(data[x, y]))
 					{
 						Debugger.Break();
 					}
@@ -265,10 +285,10 @@ namespace MonogameTest1
 			}
 			return result;
 		}
-		private static float[,] To2D(float[] data)
+		private static double[,] To2D(double[] data)
 		{
 			var size = (int)Math.Sqrt(data.Length);
-			float[,] result = new float[size, size];
+			double[,] result = new double[size, size];
 
 			for (int i = 0; i < data.Length; i++)
 			{
@@ -278,10 +298,10 @@ namespace MonogameTest1
 		}
 
 
-		private static float[,] NormaliseNoise2D(float[,] data)
+		private static double[,] NormaliseNoise2D(double[,] data)
 		{
-			float min = float.MaxValue;
-			float max = float.MinValue;
+			double min = double.MaxValue;
+			double max = double.MinValue;
 			for (var y = 0; y < data.GetLength(1); y++)
 			{
 				for (var x = 0; x < data.GetLength(0); x++)
@@ -304,7 +324,7 @@ namespace MonogameTest1
 			return data;
 		}
 
-		private static float[,] AddBorder(float[,] data, float borderValue = 0f)
+		private static double[,] AddBorder(double[,] data, double borderValue = 0f)
 		{
 			// top, bottom
 			for (var x = 0; x < data.GetLength(0); x++)
@@ -323,9 +343,9 @@ namespace MonogameTest1
 			return data;
 		}
 
-		private static float[,] ApplyKernel(float[,] data, float[,] kernel)
+		private static double[,] ApplyKernel(double[,] data, double[,] kernel)
 		{
-			float[,] tmp = new float[data.GetLength(0), data.GetLength(1)];
+			double[,] tmp = new double[data.GetLength(0), data.GetLength(1)];
 			var kernelSize = kernel.GetLength(0) * kernel.GetLength(1);
 
 			var halfsizeX = kernel.GetLength(0) / 2;
@@ -352,7 +372,7 @@ namespace MonogameTest1
 					// even size kernel
 
 					// odd size kernel
-					var tmpres = 0f;
+					var tmpres = 0.0;
 
 					//kernel
 					for (var ky = 0; ky < kernel.GetLength(1); ky++)
@@ -459,13 +479,13 @@ namespace MonogameTest1
 			// draw highlighted tile
 			var mousePos = Mouse.GetState().Position.ToVector2();
 			mousePos = ScreenToWorldSpace(mousePos, camera.Transform);
-			DrawTileAlignedBox(mousePos, tileSize);
+			DrawTileAlignedBox(mousePos, tileSize, Color.Yellow);
 
 			// draw animals
 			foreach (var a in animals)
 			{
 				a.Draw(sb, gameTime);
-				DrawTileAlignedBox(a.Position, tileSize);
+				DrawTileAlignedBox(a.Position, tileSize, Color.LightBlue);
 				DrawBoundingBox(a);
 				if (camera.Zoom >= 1)
 					DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, a.Position - new Vector2(0, a.Size.Y / 2), Color.White);
@@ -473,7 +493,7 @@ namespace MonogameTest1
 
 			// draw player
 			player1.Draw(sb, gameTime);
-			DrawTileAlignedBox(player1.Position, tileSize);
+			DrawTileAlignedBox(player1.Position, tileSize, Color.Red);
 			DrawBoundingBox(player1);
 			if (camera.Zoom >= 1)
 				DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, player1.Position - new Vector2(0, player1.Size.Y / 2), Color.White);
@@ -501,7 +521,7 @@ namespace MonogameTest1
 			DrawImGui(gameTime);
 		}
 
-		void DrawTileAlignedBox(Vector2 position, int alignment)
+		void DrawTileAlignedBox(Vector2 position, int alignment, Color color)
 		{
 			position.X -= position.X % alignment;
 			position.Y -= position.Y % alignment;
@@ -509,12 +529,12 @@ namespace MonogameTest1
 				GameServices.Textures["ui"],
 				position,
 				new Rectangle(0, 0, tileSize, tileSize),
-				Color.Red);
+				color);
 		}
 
 		void DrawBoundingBox(IEntity entity)
 		{
-			var pos = (entity.GetPosition() - (entity.GetSize() / 2)).ToPoint();
+			var pos = (entity.Position - (entity.GetSize() / 2)).ToPoint();
 			sb.Draw(
 				GameServices.Textures["ui"],
 				new Rectangle(pos.X, pos.Y, (int)entity.GetSize().X, (int)entity.GetSize().Y),
@@ -540,74 +560,78 @@ namespace MonogameTest1
 				//{
 				//	graphics.ToggleFullScreen();
 				//}
-			}
 
-			if (ImGui.CollapsingHeader("Map", ImGuiTreeNodeFlags.DefaultOpen))
-			{
-				ImGui.Text($"Width={map.Width}");
-				ImGui.Text($"Height={map.Height}");
-				_ = ImGui.Checkbox($"DrawNoiseOnly={map.DrawNoiseOnly}", ref map.DrawNoiseOnly);
-				//ImGui.Checkbox($"UseColourMap={map.UseColourMap}", ref map.UseColourMap);
-			}
 
-			if (ImGui.CollapsingHeader("Player", ImGuiTreeNodeFlags.DefaultOpen))
-			{
-				ImGui.Text($"Name={player1.Name}");
-				ImGui.Text($"Position={player1.Position}");
-				ImGui.Text($"ScreenPosition={pos2}");
-			}
-
-			if (ImGui.CollapsingHeader("Animals", ImGuiTreeNodeFlags.DefaultOpen))
-			{
-				foreach (var v in animals)
+				if (ImGui.CollapsingHeader("Map", ImGuiTreeNodeFlags.DefaultOpen))
 				{
-					ImGui.Text($"Name={v.Name}");
-					ImGui.Text($"Position={v.Position}");
-				}
-			}
-
-			if (ImGui.CollapsingHeader("Camera", ImGuiTreeNodeFlags.DefaultOpen))
-			{
-				ImGui.Text($"Position={camera.Position}");
-				ImGui.Text($"Zoom={camera.Zoom}");
-				ImGui.Text($"VisibleArea={camera.VisibleArea}");
-				ImGui.Text($"Bounds={camera.Bounds}");
-			}
-
-			if (ImGui.CollapsingHeader("Music", ImGuiTreeNodeFlags.DefaultOpen))
-			{
-				if (ImGui.Button("Play"))
-				{
-					MediaPlayer.IsRepeating = true;
-					MediaPlayer.Play(GameServices.Songs["farm_music"]);
-				}
-				if (ImGui.Button("Stop"))
-				{
-					MediaPlayer.Stop();
+					ImGui.Text($"Width={map.Width}");
+					ImGui.Text($"Height={map.Height}");
+					_ = ImGui.Checkbox($"DrawNoiseOnly={map.DrawNoiseOnly}", ref map.DrawNoiseOnly);
+					//ImGui.Checkbox($"UseColourMap={map.UseColourMap}", ref map.UseColourMap);
 				}
 
-				_ = ImGui.SliderFloat("Volume", ref volume, 0f, 1f);
-				int currentPos = (int)MediaPlayer.PlayPosition.TotalSeconds;
-				_ = ImGui.SliderInt("Position", ref currentPos, 0, (int)GameServices.Songs["farm_music"].Duration.TotalSeconds);
-			}
+				if (ImGui.CollapsingHeader("Player", ImGuiTreeNodeFlags.DefaultOpen))
+				{
+					ImGui.Text($"Name={player1.Name}");
+					ImGui.Text($"Position={player1.Position}");
+					ImGui.Text($"ScreenPosition={pos2}");
+				}
 
-			if (ImGui.CollapsingHeader("Noise Settings", ImGuiTreeNodeFlags.DefaultOpen))
-			{
-				_ = ImGui.SliderInt("Pixels", ref noiseSettings.NoiseSize, 1, 512);
-				_ = ImGui.SliderInt("Octaves", ref noiseSettings.Octaves, 1, 8);
-				_ = ImGui.SliderFloat("Initial Amplitude", ref noiseSettings.InitialAmplitude, 0f, 1f);
-				_ = ImGui.SliderFloat("Initial Frequency", ref noiseSettings.InitialFrequency, 0f, 1f);
-				_ = ImGui.SliderFloat("Lacunarity", ref noiseSettings.Lacunarity, 0f, 4f);
-				_ = ImGui.SliderFloat("Persistence", ref noiseSettings.Persistence, 0f, 4f);
-				_ = ImGui.SliderFloat("OffsetX", ref noiseSettings.Offset.Y, -100f, 100f);
-				_ = ImGui.SliderFloat("OffsetY", ref noiseSettings.Offset.X, -100f, 100f);
-				_ = ImGui.Checkbox($"UseKernel={noiseSettings.UseKernel}", ref noiseSettings.UseKernel);
-			}
+				if (ImGui.CollapsingHeader("Animals", ImGuiTreeNodeFlags.DefaultOpen))
+				{
+					foreach (var v in animals)
+					{
+						ImGui.Text($"Name={v.Name}");
+						ImGui.Text($"Position={v.Position}");
+					}
+				}
 
-			if (ImGui.CollapsingHeader("Debug Data", ImGuiTreeNodeFlags.DefaultOpen))
-			{
-				//ImGui.Text($"Animation Offset={animationOffset}");
-				ImGui.Text($"GameTime.TotalGameTime.TotalMilliseconds={gameTime.TotalGameTime.TotalMilliseconds}");
+				if (ImGui.CollapsingHeader("Camera", ImGuiTreeNodeFlags.DefaultOpen))
+				{
+					ImGui.Text($"Position={camera.Position}");
+					ImGui.Text($"Zoom={camera.Zoom}");
+					ImGui.Text($"VisibleArea={camera.VisibleArea}");
+					ImGui.Text($"Bounds={camera.Bounds}");
+				}
+
+				if (ImGui.CollapsingHeader("Music", ImGuiTreeNodeFlags.DefaultOpen))
+				{
+					if (ImGui.Button("Play"))
+					{
+						MediaPlayer.IsRepeating = true;
+						MediaPlayer.Play(GameServices.Songs["farm_music"]);
+					}
+					if (ImGui.Button("Stop"))
+					{
+						MediaPlayer.Stop();
+					}
+
+					_ = ImGui.SliderFloat("Volume", ref volume, 0f, 1f);
+					int currentPos = (int)MediaPlayer.PlayPosition.TotalSeconds;
+					_ = ImGui.SliderInt("Position", ref currentPos, 0, (int)GameServices.Songs["farm_music"].Duration.TotalSeconds);
+				}
+
+				if (ImGui.CollapsingHeader("Noise Settings", ImGuiTreeNodeFlags.DefaultOpen))
+				{
+					_ = ImGui.SliderInt("Pixels", ref noiseSettings.NoiseSize, 1, 512);
+					_ = ImGui.SliderInt("Octaves", ref noiseSettings.Octaves, 1, 8);
+					_ = ImGui.SliderFloat("Initial Amplitude", ref noiseSettings.InitialAmplitude, 0f, 1f);
+					_ = ImGui.SliderFloat("Initial Frequency", ref noiseSettings.InitialFrequency, 0f, 1f);
+					_ = ImGui.SliderFloat("Lacunarity", ref noiseSettings.Lacunarity, 0f, 4f);
+					_ = ImGui.SliderFloat("Persistence", ref noiseSettings.Persistence, 0f, 4f);
+					_ = ImGui.SliderFloat("OffsetX", ref noiseSettings.Offset.Y, -1000f, 1000f);
+					_ = ImGui.SliderFloat("OffsetY", ref noiseSettings.Offset.X, -1000f, 1000f);
+					_ = ImGui.SliderFloat($"RedistributionPower", ref noiseSettings.Redistribution, 0.001f, 10f);
+					_ = ImGui.Checkbox($"UseKernel={noiseSettings.UseKernel}", ref noiseSettings.UseKernel);
+					_ = ImGui.Checkbox($"UseTerracing={noiseSettings.UseTerracing}", ref noiseSettings.UseTerracing);
+					_ = ImGui.SliderInt($"TerraceCount", ref noiseSettings.TerraceCount, 1, 100);
+				}
+
+				if (ImGui.CollapsingHeader("Debug Data", ImGuiTreeNodeFlags.DefaultOpen))
+				{
+					//ImGui.Text($"Animation Offset={animationOffset}");
+					ImGui.Text($"GameTime.TotalGameTime.TotalMilliseconds={gameTime.TotalGameTime.TotalMilliseconds}");
+				}
 			}
 
 			GuiRenderer.EndLayout();
