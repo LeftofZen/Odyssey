@@ -49,7 +49,7 @@ namespace MonogameTest1
 	/// <summary>
 	/// This is the main type for your game.
 	/// </summary>
-	public class Game3 : Game
+	public class OdysseyGame : Game
 	{
 		readonly GraphicsDeviceManager graphics;
 		SpriteBatch sb;
@@ -73,7 +73,7 @@ namespace MonogameTest1
 		List<Animal> animals;
 		Random rand = new Random();
 
-		public Game3()
+		public OdysseyGame()
 		{
 			graphics = new GraphicsDeviceManager(this);
 			graphics.PreferredBackBufferWidth = 1980;

@@ -51,7 +51,7 @@
     <Compile Include="Erosion.cs" />
     <Compile Include="Game1.cs" />
     <Compile Include="Game2.cs" />
-    <Compile Include="Game3.cs" />
+    <Compile Include="OdysseyGame.cs" />
     <Compile Include="InputManager.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="NoiseParams.cs" />
