@@ -64,7 +64,7 @@ namespace MonogameTest1
 		private float volume = 0.5f;
 		private Vector2 pos2 = Vector2.Zero;
 
-		public ImGUIRenderer GuiRenderer; //This is the ImGuiRenderer
+		public ImGuiRenderer GuiRenderer; //This is the ImGuiRenderer
 
 		private Player player1 = new Player();
 		private Camera camera;
@@ -137,7 +137,7 @@ namespace MonogameTest1
 			base.Initialize();
 
 			// ui
-			GuiRenderer = new ImGUIRenderer(this).Initialize().RebuildFontAtlas();
+			GuiRenderer = new ImGuiRenderer(this).Initialize().RebuildFontAtlas();
 		}
 
 		/// <summary>
