@@ -15,7 +15,7 @@ namespace MonogameTest1
 		public Vector2 Velocity { get => _velocity; set => _velocity = value; }
 		public Vector2 Acceleration { get => _acceleration; set => _acceleration = value; }
 
-		public Vector2 Size = new Vector2(24, 32);
+		public Vector2 Size = new(24, 32);
 		public Vector2 Direction;
 		public float MoveSpeed;
 		public string Name;

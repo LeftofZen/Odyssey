@@ -73,8 +73,7 @@ namespace MonogameTest1
 		public Vector2 Velocity { get => _velocity; set => _velocity = value; }
 		public Vector2 Acceleration { get => _acceleration; set => _acceleration = value; }
 
-
-		public Vector2 Size = new Vector2(48, 48);
+		public Vector2 Size = new(48, 48);
 		public string Name;
 
 		public Vector2 Direction;
@@ -83,7 +82,7 @@ namespace MonogameTest1
 		//public Vector2 TargetPosition;
 		public AnimalType AnimalType;
 
-		public List<IBehaviour> Behaviours = new List<IBehaviour>();
+		public List<IBehaviour> Behaviours = new();
 
 		public void Update(GameTime gameTime)
 		{

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
@@ -37,10 +36,10 @@ namespace MonogameTest1
 	// to implement this pattern correctly and avoid rewriting code
 	public static class GameServices
 	{
-		public static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>(); // TextureCollection??
-		public static readonly Dictionary<string, SpriteFont> Fonts = new Dictionary<string, SpriteFont>(); //
-		public static readonly Dictionary<string, SoundEffect> SoundEffects = new Dictionary<string, SoundEffect>(); // SoundBank??
-		public static readonly Dictionary<string, Song> Songs = new Dictionary<string, Song>(); // SongCollection??
+		public static readonly Dictionary<string, Texture2D> Textures = new(); // TextureCollection??
+		public static readonly Dictionary<string, SpriteFont> Fonts = new(); //
+		public static readonly Dictionary<string, SoundEffect> SoundEffects = new(); // SoundBank??
+		public static readonly Dictionary<string, Song> Songs = new(); // SongCollection??
 		public static InputManager InputManager;
 	}
 
@@ -54,23 +53,17 @@ namespace MonogameTest1
 		private const int initialMapWidth = 32;
 		private const int initialMapHeight = 32;
 		private const int tileSize = 32;
-		private Dictionary<string, Map> mapLookup = new Dictionary<string, Map>();
-
-		private NoiseParams noiseSettings { get; set; } = new NoiseParams();
-		private NoiseParams previousNoiseSettings { get; set; } = new NoiseParams();
-
-		private bool isFullScreen = false;
+		private NoiseParams NoiseSettings { get; } = new NoiseParams();
+		private NoiseParams PreviousNoiseSettings { get; set; } = new NoiseParams();
 		private MouseState previousMouseState;
 		private float volume = 0.5f;
 		private Vector2 pos2 = Vector2.Zero;
-
 		public ImGuiRenderer GuiRenderer; //This is the ImGuiRenderer
 
-		private Player player1 = new Player();
+		private readonly Player player1 = new();
 		private Camera camera;
 		private Map map;
 		private List<Animal> animals;
-		private Random rand = new Random();
 
 		public OdysseyGame()
 		{
@@ -97,7 +90,7 @@ namespace MonogameTest1
 			IsMouseVisible = true;
 
 			// world
-			map = new Map(initialMapWidth, initialMapHeight, CreateNoise2D(noiseSettings))
+			map = new Map(initialMapWidth, initialMapHeight, CreateNoise2D(NoiseSettings))
 			{
 				TileSize = 32
 			};
@@ -262,7 +255,6 @@ namespace MonogameTest1
 				dd = ApplyKernel(dd, smoothingKernel);
 			}
 
-
 			//var erosion = new Erosion();
 			//var dmap = To1D(dd);
 			//erosion.Erode(dmap, 256, 10, false);
@@ -271,35 +263,6 @@ namespace MonogameTest1
 			var res = AddBorder(dd);
 			return res;
 		}
-
-		private static double[] To1D(double[,] data)
-		{
-			var result = new double[data.GetLength(0) * data.GetLength(1)];
-			for (var y = 0; y < data.GetLength(1); y++)
-			{
-				for (var x = 0; x < data.GetLength(0); x++)
-				{
-					if (double.IsNaN(data[x, y]))
-					{
-						Debugger.Break();
-					}
-					result[y * data.GetLength(0) + x] = data[x, y];
-				}
-			}
-			return result;
-		}
-		private static double[,] To2D(double[] data)
-		{
-			var size = (int)Math.Sqrt(data.Length);
-			var result = new double[size, size];
-
-			for (var i = 0; i < data.Length; i++)
-			{
-				result[i % size, i / size] = data[i];
-			}
-			return result;
-		}
-
 
 		private static double[,] NormaliseNoise2D(double[,] data)
 		{
@@ -324,6 +287,7 @@ namespace MonogameTest1
 					data[x, y] = (data[x, y] - min) * xx;
 				}
 			}
+
 			return data;
 		}
 
@@ -420,9 +384,10 @@ namespace MonogameTest1
 			{
 				if (mouse.LeftButton == ButtonState.Pressed)
 				{
-					noiseSettings.Offset += (previousMouseState.Position - mouse.Position).ToVector2() / 10f;
+					NoiseSettings.Offset += (previousMouseState.Position - mouse.Position).ToVector2() / 10f;
 				}
 			}
+
 			previousMouseState = mouse;
 
 			// input handling above, everything else below
@@ -448,10 +413,10 @@ namespace MonogameTest1
 			MediaPlayer.Volume = volume;
 
 			// TODO: Add your update logic here
-			if (!noiseSettings.IsEqualTo(previousNoiseSettings))
+			if (NoiseSettings != PreviousNoiseSettings)
 			{
-				map.SetData(CreateNoise2D(noiseSettings));
-				previousNoiseSettings.Set(noiseSettings);
+				map.SetData(CreateNoise2D(NoiseSettings));
+				PreviousNoiseSettings = NoiseSettings;
 			}
 
 			camera.Follow(player1.Position);
@@ -460,7 +425,7 @@ namespace MonogameTest1
 			base.Update(gameTime);
 		}
 
-		public Vector2 ScreenToWorldSpace(Vector2 point, Matrix transform)
+		public static Vector2 ScreenToWorldSpace(Vector2 point, Matrix transform)
 		{
 			var invertedMatrix = Matrix.Invert(transform);
 			return Vector2.Transform(point, invertedMatrix);
@@ -521,6 +486,7 @@ namespace MonogameTest1
 
 				DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, Vector2.Transform(player1.Position - new Vector2(0, player1.Size.Y / 2), camera.Transform), Color.White);
 			}
+
 			sb.End();
 
 			base.Draw(gameTime);
@@ -549,11 +515,11 @@ namespace MonogameTest1
 				Color.Blue);
 		}
 
-		public void DrawDebugString(SpriteBatch sb, SpriteFont sf, string str, Vector2 pos, Color color, float scale = 1f)
+		public static void DrawDebugString(SpriteBatch sb, SpriteFont sf, string str, Vector2 pos, Color color, float scale = 1f)
 		{
 			var size = sf.MeasureString(str);
-			sb.DrawString(sf, str, pos - size / 2 + Vector2.One, Color.Black, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
-			sb.DrawString(sf, str, pos - size / 2, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+			sb.DrawString(sf, str, pos - (size / 2) + Vector2.One, Color.Black, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+			sb.DrawString(sf, str, pos - (size / 2), color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 		}
 
 		private void DrawImGui(GameTime gameTime)
@@ -567,7 +533,6 @@ namespace MonogameTest1
 				//{
 				//	graphics.ToggleFullScreen();
 				//}
-
 
 				if (ImGui.CollapsingHeader("Map", ImGuiTreeNodeFlags.DefaultOpen))
 				{
@@ -608,6 +573,7 @@ namespace MonogameTest1
 						MediaPlayer.IsRepeating = true;
 						MediaPlayer.Play(GameServices.Songs["farm_music"]);
 					}
+
 					if (ImGui.Button("Stop"))
 					{
 						MediaPlayer.Stop();
@@ -620,18 +586,18 @@ namespace MonogameTest1
 
 				if (ImGui.CollapsingHeader("Noise Settings", ImGuiTreeNodeFlags.DefaultOpen))
 				{
-					_ = ImGui.SliderInt("Pixels", ref noiseSettings.NoiseSize, 1, 512);
-					_ = ImGui.SliderInt("Octaves", ref noiseSettings.Octaves, 1, 8);
-					_ = ImGui.SliderFloat("Initial Amplitude", ref noiseSettings.InitialAmplitude, 0f, 1f);
-					_ = ImGui.SliderFloat("Initial Frequency", ref noiseSettings.InitialFrequency, 0f, 1f);
-					_ = ImGui.SliderFloat("Lacunarity", ref noiseSettings.Lacunarity, 0f, 4f);
-					_ = ImGui.SliderFloat("Persistence", ref noiseSettings.Persistence, 0f, 4f);
-					_ = ImGui.SliderFloat("OffsetX", ref noiseSettings.Offset.Y, -1000f, 1000f);
-					_ = ImGui.SliderFloat("OffsetY", ref noiseSettings.Offset.X, -1000f, 1000f);
-					_ = ImGui.SliderFloat($"RedistributionPower", ref noiseSettings.Redistribution, 0.001f, 10f);
-					_ = ImGui.Checkbox($"UseKernel={noiseSettings.UseKernel}", ref noiseSettings.UseKernel);
-					_ = ImGui.Checkbox($"UseTerracing={noiseSettings.UseTerracing}", ref noiseSettings.UseTerracing);
-					_ = ImGui.SliderInt($"TerraceCount", ref noiseSettings.TerraceCount, 1, 100);
+					_ = ImGui.SliderInt("Pixels", ref NoiseSettings.NoiseSize, 1, 512);
+					_ = ImGui.SliderInt("Octaves", ref NoiseSettings.Octaves, 1, 8);
+					_ = ImGui.SliderFloat("Initial Amplitude", ref NoiseSettings.InitialAmplitude, 0f, 1f);
+					_ = ImGui.SliderFloat("Initial Frequency", ref NoiseSettings.InitialFrequency, 0f, 1f);
+					_ = ImGui.SliderFloat("Lacunarity", ref NoiseSettings.Lacunarity, 0f, 4f);
+					_ = ImGui.SliderFloat("Persistence", ref NoiseSettings.Persistence, 0f, 4f);
+					_ = ImGui.SliderFloat("OffsetX", ref NoiseSettings.Offset.Y, -1000f, 1000f);
+					_ = ImGui.SliderFloat("OffsetY", ref NoiseSettings.Offset.X, -1000f, 1000f);
+					_ = ImGui.SliderFloat("RedistributionPower", ref NoiseSettings.Redistribution, 0.001f, 10f);
+					_ = ImGui.Checkbox($"UseKernel={NoiseSettings.UseKernel}", ref NoiseSettings.UseKernel);
+					_ = ImGui.Checkbox($"UseTerracing={NoiseSettings.UseTerracing}", ref NoiseSettings.UseTerracing);
+					_ = ImGui.SliderInt("TerraceCount", ref NoiseSettings.TerraceCount, 1, 100);
 				}
 
 				if (ImGui.CollapsingHeader("Debug Data", ImGuiTreeNodeFlags.DefaultOpen))

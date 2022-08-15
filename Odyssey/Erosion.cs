@@ -92,6 +92,7 @@ namespace MonogameTest1
 						dirX /= len;
 						dirY /= len;
 					}
+
 					posX += dirX;
 					posY += dirY;
 
@@ -147,7 +148,7 @@ namespace MonogameTest1
 			}
 		}
 
-		HeightAndGradient CalculateHeightAndGradient(float[] nodes, int mapSize, float posX, float posY)
+		static HeightAndGradient CalculateHeightAndGradient(float[] nodes, int mapSize, float posX, float posY)
 		{
 			int coordX = (int)posX;
 			int coordY = (int)posY;

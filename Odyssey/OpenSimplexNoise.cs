@@ -19,12 +19,12 @@ namespace Noise
 		private const double NORM_3D = 1.0 / 103.0;
 		private const double NORM_4D = 1.0 / 30.0;
 
-		private byte[] perm;
-		private byte[] perm2D;
-		private byte[] perm3D;
-		private byte[] perm4D;
+		private readonly byte[] perm;
+		private readonly byte[] perm2D;
+		private readonly byte[] perm3D;
+		private readonly byte[] perm4D;
 
-		private static double[] gradients2D = new double[]
+		private static readonly double[] gradients2D = new double[]
 		{
 			 5,  2,    2,  5,
 			-5,  2,   -2,  5,
@@ -32,7 +32,7 @@ namespace Noise
 			-5, -2,   -2, -5,
 		};
 
-		private static double[] gradients3D =
+		private static readonly double[] gradients3D =
 		{
 			-11,  4,  4,     -4,  11,  4,    -4,  4,  11,
 			 11,  4,  4,      4,  11,  4,     4,  4,  11,
@@ -44,7 +44,7 @@ namespace Noise
 			 11, -4, -4,      4, -11, -4,     4, -4, -11,
 		};
 
-		private static double[] gradients4D =
+		private static readonly double[] gradients4D =
 		{
 			 3,  1,  1,  1,      1,  3,  1,  1,      1,  1,  3,  1,      1,  1,  1,  3,
 			-3,  1,  1,  1,     -1,  3,  1,  1,     -1,  1,  3,  1,     -1,  1,  1,  3,
@@ -64,9 +64,9 @@ namespace Noise
 			-3, -1, -1, -1,     -1, -3, -1, -1,     -1, -1, -3, -1,     -1, -1, -1, -3,
 		};
 
-		private static Contribution2[] lookup2D;
-		private static Contribution3[] lookup3D;
-		private static Contribution4[] lookup4D;
+		private static readonly Contribution2[] lookup2D;
+		private static readonly Contribution3[] lookup3D;
+		private static readonly Contribution4[] lookup4D;
 
 		static OpenSimplexNoise()
 		{
@@ -94,8 +94,10 @@ namespace Noise
 					{
 						previous.Next = current;
 					}
+
 					previous = current;
 				}
+
 				current.Next = new Contribution2(p2D[i + 1], p2D[i + 2], p2D[i + 3]);
 			}
 
@@ -104,7 +106,6 @@ namespace Noise
 			{
 				lookup2D[lookupPairs2D[i]] = contributions2D[lookupPairs2D[i + 1]];
 			}
-
 
 			var base3D = new int[][]
 			{
@@ -131,8 +132,10 @@ namespace Noise
 					{
 						previous.Next = current;
 					}
+
 					previous = current;
 				}
+
 				current.Next = new Contribution3(p3D[i + 1], p3D[i + 2], p3D[i + 3], p3D[i + 4]);
 				current.Next.Next = new Contribution3(p3D[i + 5], p3D[i + 6], p3D[i + 7], p3D[i + 8]);
 			}
@@ -168,8 +171,10 @@ namespace Noise
 					{
 						previous.Next = current;
 					}
+
 					previous = current;
 				}
+
 				current.Next = new Contribution4(p4D[i + 1], p4D[i + 2], p4D[i + 3], p4D[i + 4], p4D[i + 5]);
 				current.Next.Next = new Contribution4(p4D[i + 6], p4D[i + 7], p4D[i + 8], p4D[i + 9], p4D[i + 10]);
 				current.Next.Next.Next = new Contribution4(p4D[i + 11], p4D[i + 12], p4D[i + 13], p4D[i + 14], p4D[i + 15]);
@@ -205,6 +210,7 @@ namespace Noise
 			{
 				source[i] = (byte)i;
 			}
+
 			seed = seed * 6364136223846793005L + 1442695040888963407L;
 			seed = seed * 6364136223846793005L + 1442695040888963407L;
 			seed = seed * 6364136223846793005L + 1442695040888963407L;
@@ -216,6 +222,7 @@ namespace Noise
 				{
 					r += (i + 1);
 				}
+
 				perm[i] = source[r];
 				perm2D[i] = (byte)(perm[i] & 0x0E);
 				perm3D[i] = (byte)((perm[i] % 24) * 3);
@@ -267,8 +274,10 @@ namespace Noise
 					attn *= attn;
 					value += attn * attn * valuePart;
 				}
+
 				c = c.Next;
 			}
+
 			return value * NORM_2D;
 		}
 
@@ -327,6 +336,7 @@ namespace Noise
 
 				c = c.Next;
 			}
+
 			return value * NORM_3D;
 		}
 
@@ -395,6 +405,7 @@ namespace Noise
 
 				c = c.Next;
 			}
+
 			return value * NORM_4D;
 		}
 

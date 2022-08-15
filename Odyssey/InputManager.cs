@@ -14,9 +14,6 @@ namespace MonogameTest1
 		{
 		}
 
-		Keys[] keysDown;
-		Keys[] prevKeysDown;
-
 		public new void Update(GameTime gameTime)
 		{
 			base.Update(gameTime);

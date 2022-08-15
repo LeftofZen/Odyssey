@@ -13,7 +13,6 @@ namespace MonogameTest1
 
 		Tile[,] Data;
 
-
 		public bool DrawNoiseOnly = true;
 		public bool UseColourMap = false;
 
@@ -87,7 +86,7 @@ namespace MonogameTest1
 			}
 		}
 
-		public void Update(GameTime gameTime)
+		public static void Update(GameTime gameTime)
 		{
 		}
 
@@ -123,8 +122,6 @@ namespace MonogameTest1
 			}
 		}
 
-
-
 	}
 
 	class Tile
@@ -151,7 +148,7 @@ namespace MonogameTest1
 
 		public Rectangle MapRect => SpriteMap[Map(value)];
 
-		public TileType Map(double value)
+		public static TileType Map(double value)
 		{
 			if (value < 0.4) return TileType.Mountain;
 			if (value < 0.5) return TileType.Forest;
@@ -163,7 +160,7 @@ namespace MonogameTest1
 
 		public Color Colour;
 
-		static Dictionary<TileType, Color> ColourMap = new Dictionary<TileType, Color>
+		static readonly Dictionary<TileType, Color> ColourMap = new()
 		{
 			{ TileType.Water, Color.Blue },
 			{ TileType.Sand, Color.DarkGoldenrod },
@@ -173,7 +170,7 @@ namespace MonogameTest1
 			{ TileType.Snow, Color.LightGray },
 		};
 
-		static Dictionary<TileType, Rectangle> SpriteMap = new Dictionary<TileType, Rectangle>
+		static readonly Dictionary<TileType, Rectangle> SpriteMap = new()
 		{
 			{ TileType.Water, new Rectangle(608, 96, 32, 32) },
 			{ TileType.Sand, new Rectangle(32, 480, 32, 32) },
