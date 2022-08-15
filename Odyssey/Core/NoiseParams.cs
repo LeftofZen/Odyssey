@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 
-namespace MonogameTest1
+namespace Odyssey.Core
 {
 	internal record class NoiseParams
 	{

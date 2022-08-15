@@ -7,9 +7,11 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using MonoGame.ImGui;
-using Noise;
+using Odyssey.Core;
+using Odyssey.Entities;
+using Odyssey.World;
 
-namespace MonogameTest1
+namespace Odyssey
 {
 	public interface IKinematics
 	{

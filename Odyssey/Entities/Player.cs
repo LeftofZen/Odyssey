@@ -1,11 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 
-namespace MonogameTest1
+namespace Odyssey.Entities
 {
-	class Player : IEntity
+	internal class Player : IEntity
 	{
 		// IKinematics
 		public Vector2 _position;

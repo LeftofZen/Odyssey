@@ -1,9 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 
-namespace MonogameTest1
+namespace Odyssey
 {
 	public class Camera
 	{
@@ -57,15 +57,9 @@ namespace MonogameTest1
 			UpdateVisibleArea();
 		}
 
-		public void MoveCamera(Vector2 movePosition)
-		{
-			Position += movePosition;
-		}
+		public void MoveCamera(Vector2 movePosition) => Position += movePosition;
 
-		public void Follow(Vector2 movePosition)
-		{
-			Position = movePosition;
-		}
+		public void Follow(Vector2 movePosition) => Position = movePosition;
 
 		public void AdjustZoom()
 		{
@@ -78,7 +72,7 @@ namespace MonogameTest1
 			Bounds = bounds.Bounds;
 			UpdateMatrix();
 
-			Vector2 cameraMovement = Vector2.Zero;
+			var cameraMovement = Vector2.Zero;
 			var moveSpeed = (int)(-20 * Zoom + 35);
 
 			//if (Keyboard.GetState().IsKeyDown(Keys.Up))

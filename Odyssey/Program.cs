@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MonogameTest1
+namespace Odyssey
 {
 	/// <summary>
 	/// The main class.

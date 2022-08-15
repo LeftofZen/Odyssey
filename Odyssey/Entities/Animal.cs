@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MonogameTest1
+namespace Odyssey.Entities
 {
 	enum AnimalType
 	{
@@ -154,7 +154,7 @@ namespace MonogameTest1
 		{
 			sb.Draw(
 				GameServices.Textures["animals"],
-				Position - (Size / 2),
+				Position - Size / 2,
 				new Rectangle(0, 0, (int)Size.X, (int)Size.Y),
 				Color.White);
 
