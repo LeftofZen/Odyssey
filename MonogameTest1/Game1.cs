@@ -1,11 +1,11 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using Newtonsoft.Json.Linq;
 
 namespace MonogameTest1
 {
@@ -14,21 +14,23 @@ namespace MonogameTest1
 	/// </summary>
 	public class Game1 : Game
 	{
-		readonly GraphicsDeviceManager graphics;
-		SpriteBatch sb;
-		readonly Dictionary<string, Texture2D> texLookup = new Dictionary<string, Texture2D>();
-		readonly Dictionary<string, SpriteFont> fontLookup = new Dictionary<string, SpriteFont>();
-		const int mapWidth = 32;
-		const int mapHeight = 32;
-		int[,] map = new int[mapWidth, mapHeight];
-		const int tileSize = 32;
-		Dictionary<string, Tiled.Map> mapLookup = new Dictionary<string, Tiled.Map>();
+		private readonly GraphicsDeviceManager graphics;
+		private SpriteBatch sb;
+		private readonly Dictionary<string, Texture2D> texLookup = new Dictionary<string, Texture2D>();
+		private readonly Dictionary<string, SpriteFont> fontLookup = new Dictionary<string, SpriteFont>();
+		private const int mapWidth = 32;
+		private const int mapHeight = 32;
+		private int[,] map = new int[mapWidth, mapHeight];
+		private const int tileSize = 32;
+		private Dictionary<string, Tiled.Map> mapLookup = new Dictionary<string, Tiled.Map>();
 
 		public Game1()
 		{
-			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1920;
-			graphics.PreferredBackBufferHeight = 1080;
+			graphics = new GraphicsDeviceManager(this)
+			{
+				PreferredBackBufferWidth = 1920,
+				PreferredBackBufferHeight = 1080
+			};
 
 			Content.RootDirectory = "Content";
 		}
@@ -46,9 +48,9 @@ namespace MonogameTest1
 
 			//map
 			var rnd = new Random();
-			for (int y = 0; y < mapHeight; y++)
+			for (var y = 0; y < mapHeight; y++)
 			{
-				for (int x = 0; x < mapWidth; x++)
+				for (var x = 0; x < mapWidth; x++)
 				{
 					map[x, y] = rnd.Next(484);
 				}
@@ -78,7 +80,6 @@ namespace MonogameTest1
 			{
 				fontLookup.Add(v, Content.Load<SpriteFont>("fonts\\" + v));
 			}
-
 
 			mapLookup.Add("map1", JObject.Parse(File.ReadAllText(@"C:\Users\bigba\OneDrive\Documents\Tiled\map1.json")).ToObject<Tiled.Map>());
 
@@ -123,7 +124,7 @@ namespace MonogameTest1
 		protected override void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
-			int drawCount = 0;
+			var drawCount = 0;
 			sb.Begin();
 
 			// TODO: Add your drawing code here
@@ -164,11 +165,11 @@ namespace MonogameTest1
 
 		public void DrawMap(SpriteBatch sb, Tiled.Map m)
 		{
-			foreach (Tiled.Layer l in m.layers)
+			foreach (var l in m.layers)
 			{
-				for (int y = 0; y < l.height; y++)
+				for (var y = 0; y < l.height; y++)
 				{
-					for (int x = 0; x < l.width; x++)
+					for (var x = 0; x < l.width; x++)
 					{
 						// don't render past screen edge
 						var tileDrawPos = new Vector2(x * m.tilewidth, y * m.tileheight);
