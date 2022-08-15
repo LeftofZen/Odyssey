@@ -9,8 +9,8 @@
     <ProjectGuid>{B1937E0C-4E88-4764-83A0-E164078FCE0E}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MonogameTest1</RootNamespace>
-    <AssemblyName>MonogameTest1</AssemblyName>
+    <RootNamespace>Odyssey</RootNamespace>
+    <AssemblyName>OdysseyGame</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MonoGamePlatform>DesktopGL</MonoGamePlatform>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
@@ -49,8 +49,8 @@
     <Compile Include="Camera.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Erosion.cs" />
-    <Compile Include="Game1.cs" />
-    <Compile Include="Game2.cs" />
+    <Compile Include="deprecated\Game1.cs" />
+    <Compile Include="deprecated\Game2.cs" />
     <Compile Include="OdysseyGame.cs" />
     <Compile Include="InputManager.cs" />
     <Compile Include="Map.cs" />

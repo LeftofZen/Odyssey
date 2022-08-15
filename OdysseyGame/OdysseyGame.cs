@@ -1,4 +1,7 @@
-﻿using ImGuiNET;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
@@ -6,9 +9,6 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using MonoGame.ImGui;
 using Noise;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace MonogameTest1
 {
@@ -33,8 +33,6 @@ namespace MonogameTest1
 		//void SetPosition(Vector2 pos);
 	}
 
-
-
 	// I know XNA/Monogame has some kind of GameServices like this with components, need to look that up
 	// to implement this pattern correctly and avoid rewriting code
 	public static class GameServices
@@ -51,33 +49,36 @@ namespace MonogameTest1
 	/// </summary>
 	public class OdysseyGame : Game
 	{
-		readonly GraphicsDeviceManager graphics;
-		SpriteBatch sb;
-		const int initialMapWidth = 32;
-		const int initialMapHeight = 32;
-		const int tileSize = 32;
-		Dictionary<string, Map> mapLookup = new Dictionary<string, Map>();
-		NoiseParams noiseSettings { get; set; } = new NoiseParams();
-		NoiseParams previousNoiseSettings { get; set; } = new NoiseParams();
-		bool isFullScreen = false;
+		private readonly GraphicsDeviceManager graphics;
+		private SpriteBatch sb;
+		private const int initialMapWidth = 32;
+		private const int initialMapHeight = 32;
+		private const int tileSize = 32;
+		private Dictionary<string, Map> mapLookup = new Dictionary<string, Map>();
 
-		MouseState previousMouseState;
-		float volume = 0.5f;
-		Vector2 pos2 = Vector2.Zero;
+		private NoiseParams noiseSettings { get; set; } = new NoiseParams();
+		private NoiseParams previousNoiseSettings { get; set; } = new NoiseParams();
+
+		private bool isFullScreen = false;
+		private MouseState previousMouseState;
+		private float volume = 0.5f;
+		private Vector2 pos2 = Vector2.Zero;
 
 		public ImGUIRenderer GuiRenderer; //This is the ImGuiRenderer
 
-		Player player1 = new Player();
-		Camera camera;
-		Map map;
-		List<Animal> animals;
-		Random rand = new Random();
+		private Player player1 = new Player();
+		private Camera camera;
+		private Map map;
+		private List<Animal> animals;
+		private Random rand = new Random();
 
 		public OdysseyGame()
 		{
-			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1980;
-			graphics.PreferredBackBufferHeight = 1080;
+			graphics = new GraphicsDeviceManager(this)
+			{
+				PreferredBackBufferWidth = 1980,
+				PreferredBackBufferHeight = 1080
+			};
 
 			Content.RootDirectory = "Content";
 			GameServices.InputManager = new InputManager(this);
@@ -96,8 +97,10 @@ namespace MonogameTest1
 			IsMouseVisible = true;
 
 			// world
-			map = new Map(initialMapWidth, initialMapHeight, CreateNoise2D(noiseSettings));
-			map.TileSize = 32;
+			map = new Map(initialMapWidth, initialMapHeight, CreateNoise2D(noiseSettings))
+			{
+				TileSize = 32
+			};
 
 			// character
 			player1.Position = new Vector2(map.Width * tileSize / 2, map.Height * tileSize / 2);
@@ -271,7 +274,7 @@ namespace MonogameTest1
 
 		private static double[] To1D(double[,] data)
 		{
-			double[] result = new double[data.GetLength(0) * data.GetLength(1)];
+			var result = new double[data.GetLength(0) * data.GetLength(1)];
 			for (var y = 0; y < data.GetLength(1); y++)
 			{
 				for (var x = 0; x < data.GetLength(0); x++)
@@ -288,9 +291,9 @@ namespace MonogameTest1
 		private static double[,] To2D(double[] data)
 		{
 			var size = (int)Math.Sqrt(data.Length);
-			double[,] result = new double[size, size];
+			var result = new double[size, size];
 
-			for (int i = 0; i < data.Length; i++)
+			for (var i = 0; i < data.Length; i++)
 			{
 				result[i % size, i / size] = data[i];
 			}
@@ -300,8 +303,8 @@ namespace MonogameTest1
 
 		private static double[,] NormaliseNoise2D(double[,] data)
 		{
-			double min = double.MaxValue;
-			double max = double.MinValue;
+			var min = double.MaxValue;
+			var max = double.MinValue;
 			for (var y = 0; y < data.GetLength(1); y++)
 			{
 				for (var x = 0; x < data.GetLength(0); x++)
@@ -345,7 +348,7 @@ namespace MonogameTest1
 
 		private static double[,] ApplyKernel(double[,] data, double[,] kernel)
 		{
-			double[,] tmp = new double[data.GetLength(0), data.GetLength(1)];
+			var tmp = new double[data.GetLength(0), data.GetLength(1)];
 			var kernelSize = kernel.GetLength(0) * kernel.GetLength(1);
 
 			var halfsizeX = kernel.GetLength(0) / 2;
@@ -459,7 +462,7 @@ namespace MonogameTest1
 
 		public Vector2 ScreenToWorldSpace(Vector2 point, Matrix transform)
 		{
-			Matrix invertedMatrix = Matrix.Invert(transform);
+			var invertedMatrix = Matrix.Invert(transform);
 			return Vector2.Transform(point, invertedMatrix);
 		}
 
@@ -488,7 +491,9 @@ namespace MonogameTest1
 				DrawTileAlignedBox(a.Position, tileSize, Color.LightBlue);
 				DrawBoundingBox(a);
 				if (camera.Zoom >= 1)
+				{
 					DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, a.Position - new Vector2(0, a.Size.Y / 2), Color.White);
+				}
 			}
 
 			// draw player
@@ -496,7 +501,9 @@ namespace MonogameTest1
 			DrawTileAlignedBox(player1.Position, tileSize, Color.Red);
 			DrawBoundingBox(player1);
 			if (camera.Zoom >= 1)
+			{
 				DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, player1.Position - new Vector2(0, player1.Size.Y / 2), Color.White);
+			}
 
 			//DrawMap(sb, mapLookup["map1"]);
 			//DrawDebugString(sb, fontLookup["Calibri"], $"DrawCount={drawCount}", new Vector2(8, 8));
@@ -521,7 +528,7 @@ namespace MonogameTest1
 			DrawImGui(gameTime);
 		}
 
-		void DrawTileAlignedBox(Vector2 position, int alignment, Color color)
+		private void DrawTileAlignedBox(Vector2 position, int alignment, Color color)
 		{
 			position.X -= position.X % alignment;
 			position.Y -= position.Y % alignment;
@@ -532,7 +539,7 @@ namespace MonogameTest1
 				color);
 		}
 
-		void DrawBoundingBox(IEntity entity)
+		private void DrawBoundingBox(IEntity entity)
 		{
 			var pos = (entity.Position - (entity.GetSize() / 2)).ToPoint();
 			sb.Draw(
@@ -544,12 +551,12 @@ namespace MonogameTest1
 
 		public void DrawDebugString(SpriteBatch sb, SpriteFont sf, string str, Vector2 pos, Color color, float scale = 1f)
 		{
-			Vector2 size = sf.MeasureString(str);
+			var size = sf.MeasureString(str);
 			sb.DrawString(sf, str, pos - size / 2 + Vector2.One, Color.Black, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 			sb.DrawString(sf, str, pos - size / 2, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 		}
 
-		void DrawImGui(GameTime gameTime)
+		private void DrawImGui(GameTime gameTime)
 		{
 			// ImGUI
 			GuiRenderer.BeginLayout(gameTime);
@@ -607,7 +614,7 @@ namespace MonogameTest1
 					}
 
 					_ = ImGui.SliderFloat("Volume", ref volume, 0f, 1f);
-					int currentPos = (int)MediaPlayer.PlayPosition.TotalSeconds;
+					var currentPos = (int)MediaPlayer.PlayPosition.TotalSeconds;
 					_ = ImGui.SliderInt("Position", ref currentPos, 0, (int)GameServices.Songs["farm_music"].Duration.TotalSeconds);
 				}
 
