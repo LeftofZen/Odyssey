@@ -77,6 +77,18 @@
 /processorParam:TextureFormat=Color
 /build:Textures/char.bmp
 
+#begin Textures/grassland.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,255,255,0
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Textures/grassland.png
+
 #begin Textures/terrain.png
 /importer:TextureImporter
 /processor:TextureProcessor

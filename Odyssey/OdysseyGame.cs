@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
@@ -9,10 +12,37 @@ using Microsoft.Xna.Framework.Media;
 using MonoGame.ImGui;
 using Odyssey.Core;
 using Odyssey.Entities;
+using Odyssey.Network;
 using Odyssey.World;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog.Formatting;
+using Serilog.Formatting.Display;
 
 namespace Odyssey
 {
+	internal record GuiLog(string message, DateTimeOffset initialTime, int millisondsToDisplay);
+
+	internal class InMemorySink : ILogEventSink
+	{
+		private readonly ITextFormatter _textFormatter = new MessageTemplateTextFormatter("{Timestamp} [{Level}] {Message}{Exception}");
+
+		public ConcurrentQueue<GuiLog> Events { get; } = new ConcurrentQueue<GuiLog>();
+
+		public void Emit(LogEvent logEvent)
+		{
+			if (logEvent == null)
+			{
+				throw new ArgumentNullException(nameof(logEvent));
+			}
+
+			var renderSpace = new StringWriter();
+			_textFormatter.Format(logEvent, renderSpace);
+			Events.Enqueue(new GuiLog(renderSpace.ToString(), logEvent.Timestamp, 5000));
+		}
+	}
+
 	public interface IKinematics
 	{
 		Vector2 Position { get; set; }
@@ -67,6 +97,16 @@ namespace Odyssey
 		private Map map;
 		private List<Animal> animals;
 
+		private Server server;
+		private Client defaultClient;
+		private InMemorySink logMemSink;
+
+		protected override void OnExiting(object sender, EventArgs args)
+		{
+			server.Stop();
+			base.OnExiting(sender, args);
+		}
+
 		public OdysseyGame()
 		{
 			graphics = new GraphicsDeviceManager(this)
@@ -77,6 +117,16 @@ namespace Odyssey
 
 			Content.RootDirectory = "Content";
 			GameServices.InputManager = new InputManager(this);
+
+			logMemSink = new InMemorySink();
+			Log.Logger = new LoggerConfiguration()
+				.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
+				.WriteTo.Sink(logMemSink)
+				.MinimumLevel.Debug()
+				.CreateLogger();
+
+			server = new Server();
+			defaultClient = new Client(server.Hostname, server.Port);
 		}
 
 		/// <summary>
@@ -90,6 +140,9 @@ namespace Odyssey
 			// TODO: Add your initialization logic here
 			Window.AllowUserResizing = true;
 			IsMouseVisible = true;
+
+			server.Start();
+			defaultClient.Start();
 
 			// world
 			map = new Map(initialMapWidth, initialMapHeight, CreateNoise2D(NoiseSettings))
@@ -145,7 +198,7 @@ namespace Odyssey
 			sb = new SpriteBatch(GraphicsDevice);
 
 			// TODO: use this.Content to load your game content here
-			var texNames = new List<string> { "terrain", "char", "ui", "animals" };
+			var texNames = new List<string> { "terrain", "char", "ui", "animals", "grassland" };
 			foreach (var v in texNames)
 			{
 				GameServices.Textures.Add(v, Content.Load<Texture2D>("textures\\" + v));
@@ -369,6 +422,9 @@ namespace Odyssey
 			// TODO: Unload any non ContentManager content here
 		}
 
+		//private NetworkInput currentInput = new NetworkInput();
+		private NetworkInput previousInput = new NetworkInput();
+
 		/// <summary>
 		/// Allows the game to run logic such as updating the world,
 		/// checking for collisions, gathering input, and playing audio.
@@ -376,6 +432,49 @@ namespace Odyssey
 		/// <param name="gameTime">Provides a snapshot of timing values.</param>
 		protected override void Update(GameTime gameTime)
 		{
+			// simulate networked client
+			var clientInput = new NetworkInput()
+			{
+				Mouse = Mouse.GetState(),
+				Keyboard = Keyboard.GetState(),
+				Gamepad = GamePad.GetState(PlayerIndex.One),
+				InputTimeUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+				//PlayerName = "Left of Zen",
+			};
+
+			//if (!clientInput.Equals(previousInput))
+			//{
+			if (Keyboard.GetState().GetPressedKeys().Length > 0)
+			{
+				defaultClient.SendMessage(MessageType.NetworkInput, clientInput);
+			}
+			//previousInput = clientInput;
+			//}
+
+			// process server queue
+			while (server.MessageQueue.TryDequeue(out var msg))
+			{
+				Log.Information("got message in game loop from server queue", msg);
+				switch (msg.Type)
+				{
+					case MessageType.NetworkInput:
+						var networkMsg = (NetworkInput)msg;
+						Log.Information("[NetworkInput Message] {inputTime}", networkMsg.InputTimeUnixMilliseconds);
+						// input handling above, everything else below
+						player1.Update(networkMsg, gameTime);
+						break;
+				}
+			}
+
+			// trim log queue;
+			//var dateTimeNow = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+			//var toKeep = logMemSink.Events.Where(e => e.initialTime.ToUnixTimeMilliseconds() + e.millisondsToDisplay > dateTimeNow);
+			//logMemSink.Events.Clear();
+			//foreach (var v in toKeep)
+			//{
+			//	logMemSink.Events.Enqueue(v);
+			//}
+
 			if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
 			{
 				Exit();
@@ -391,9 +490,6 @@ namespace Odyssey
 			}
 
 			previousMouseState = mouse;
-
-			// input handling above, everything else below
-			player1.Update(gameTime);
 
 			foreach (var a in animals)
 			{
@@ -459,7 +555,7 @@ namespace Odyssey
 				DrawBoundingBox(a);
 				if (camera.Zoom >= 1)
 				{
-					DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, a.Position - new Vector2(0, a.Size.Y / 2), Color.White);
+					DrawDebugStringCentered(sb, GameServices.Fonts["Calibri"], a.Name, a.Position - new Vector2(0, a.Size.Y / 2), Color.White);
 				}
 			}
 
@@ -469,7 +565,7 @@ namespace Odyssey
 			DrawBoundingBox(player1);
 			if (camera.Zoom >= 1)
 			{
-				DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, player1.Position - new Vector2(0, player1.Size.Y / 2), Color.White);
+				DrawDebugStringCentered(sb, GameServices.Fonts["Calibri"], player1.Name, player1.Position - new Vector2(0, player1.Size.Y / 2), Color.White);
 			}
 
 			//DrawMap(sb, mapLookup["map1"]);
@@ -483,10 +579,18 @@ namespace Odyssey
 			{
 				foreach (var a in animals)
 				{
-					DrawDebugString(sb, GameServices.Fonts["Calibri"], a.Name, Vector2.Transform(a.Position - new Vector2(0, a.Size.Y / 2), camera.Transform), Color.White);
+					DrawDebugStringCentered(sb, GameServices.Fonts["Calibri"], a.Name, Vector2.Transform(a.Position - new Vector2(0, a.Size.Y / 2), camera.Transform), Color.White);
 				}
 
-				DrawDebugString(sb, GameServices.Fonts["Calibri"], player1.Name, Vector2.Transform(player1.Position - new Vector2(0, player1.Size.Y / 2), camera.Transform), Color.White);
+				DrawDebugStringCentered(sb, GameServices.Fonts["Calibri"], player1.Name, Vector2.Transform(player1.Position - new Vector2(0, player1.Size.Y / 2), camera.Transform), Color.White);
+			}
+
+			// logs
+			var logStartY = 100;
+			foreach (var log in logMemSink.Events.TakeLast(40))
+			{
+				DrawDebugStringLeftAligned(sb, GameServices.Fonts["Calibri"], log.message, new Vector2(100, logStartY), Color.Red, 1);
+				logStartY += 20;
 			}
 
 			sb.End();
@@ -517,11 +621,17 @@ namespace Odyssey
 				Color.Blue);
 		}
 
-		public static void DrawDebugString(SpriteBatch sb, SpriteFont sf, string str, Vector2 pos, Color color, float scale = 1f)
+		public static void DrawDebugStringCentered(SpriteBatch sb, SpriteFont sf, string str, Vector2 pos, Color color, float scale = 1f)
 		{
 			var size = sf.MeasureString(str);
 			sb.DrawString(sf, str, pos - (size / 2) + Vector2.One, Color.Black, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 			sb.DrawString(sf, str, pos - (size / 2), color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+		}
+		public static void DrawDebugStringLeftAligned(SpriteBatch sb, SpriteFont sf, string str, Vector2 pos, Color color, float scale = 1f)
+		{
+			var size = sf.MeasureString(str);
+			sb.DrawString(sf, str, pos + Vector2.One, Color.Black, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+			sb.DrawString(sf, str, pos, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 		}
 
 		private void DrawImGui(GameTime gameTime)

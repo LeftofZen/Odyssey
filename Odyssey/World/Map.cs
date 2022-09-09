@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGame.Extended;
 
 namespace Odyssey.World
 {
@@ -10,6 +11,7 @@ namespace Odyssey.World
 		public int Height;
 		public int TileSize;
 		private Tile[,] Data;
+		private int[,] Trees; // -1 = no tree, 0->infinity = tree id
 
 		public bool DrawNoiseOnly = true;
 		public bool UseColourMap = false;
@@ -21,6 +23,7 @@ namespace Odyssey.World
 			Width = width;
 			Height = height;
 			Data = new Tile[Width, Height];
+			Trees = new int[Width, Height];
 
 			// init
 			for (var y = 0; y < Height; y++)
@@ -31,8 +34,11 @@ namespace Odyssey.World
 					{
 						UseColourMap = UseColourMap
 					};
+					Trees[x, y] = -1;
 				}
 			}
+
+			Trees[10, 10] = 1;
 		}
 
 		public Map(int width, int height, double[] data) : this(width, height) => SetData(data);
@@ -90,27 +96,44 @@ namespace Odyssey.World
 					}
 					else
 					{
-						var srcRect = Data[x, y].MapRect;
-						var dstRect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
-
-						var safeCamera = new Rectangle(
-							camera.VisibleArea.X - TileSize,
-							camera.VisibleArea.Y - TileSize,
-							camera.VisibleArea.Width + 2 * TileSize,
-							camera.VisibleArea.Height + 2 * TileSize);
-
-						if (safeCamera.Contains(dstRect))
-						{
-							//sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, Data[x, y].Colour);
-							var grey = (float)(Data[x, y].value / 2.0 + 0.5);
-							sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, new Color(grey, grey, grey));
-						}
+						DrawTile(sb, camera, y, x);
 					}
 				}
 			}
 		}
 
+		private void DrawTile(SpriteBatch sb, Camera camera, int y, int x)
+		{
+			var srcRect = Data[x, y].MapRect;
+			var dstRect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
+
+			var safeCamera = new Rectangle(
+				camera.VisibleArea.X - TileSize,
+				camera.VisibleArea.Y - TileSize,
+				camera.VisibleArea.Width + 2 * TileSize,
+				camera.VisibleArea.Height + 2 * TileSize);
+
+			if (safeCamera.Contains(dstRect))
+			{
+				//sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, Data[x, y].Colour);
+				var grey = (float)(Data[x, y].value / 2.0 + 0.5);
+				sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, new Color(grey, grey, grey));
+			}
+
+			if (Trees[x, y] != -1)
+			{
+				var treeSrcRect = new Rectangle(0, 160, 128, 160);
+				var treeOrigin = new Point(treeSrcRect.Width / 2, treeSrcRect.Height);
+				var treeDstRect = new Rectangle((x * TileSize) - treeOrigin.X, (y * TileSize) - treeOrigin.Y, treeSrcRect.Width, treeSrcRect.Height);
+				if (safeCamera.Contains(treeDstRect))
+				{
+					sb.Draw(GameServices.Textures["grassland"], treeDstRect, treeSrcRect, Color.White);
+					sb.DrawRectangle(treeDstRect, Color.Green, 2);
+				}
+			}
+		}
 	}
+
 
 	public enum TileType
 	{

@@ -19,35 +19,35 @@ namespace Odyssey.Entities
 		public float MoveSpeed;
 		public string Name;
 
-		public void Update(GameTime gameTime)
+		public void Update(NetworkInput input, GameTime gameTime)
 		{
 			UpdateKinematics(gameTime);
 
 			var speedModifier = 1f;
 
-			if (Keyboard.GetState().IsKeyDown(Keys.RightShift))
+			if (input.Keyboard.IsKeyDown(Keys.RightShift))
 			{
 				speedModifier = 4f;
 			}
 
 			var speed = MoveSpeed * speedModifier;
 
-			if (Keyboard.GetState().IsKeyDown(Keys.Up))
+			if (input.Keyboard.IsKeyDown(Keys.Up))
 			{
 				_position.Y += -speed;
 			}
 
-			if (Keyboard.GetState().IsKeyDown(Keys.Down))
+			if (input.Keyboard.IsKeyDown(Keys.Down))
 			{
 				_position.Y += speed;
 			}
 
-			if (Keyboard.GetState().IsKeyDown(Keys.Left))
+			if (input.Keyboard.IsKeyDown(Keys.Left))
 			{
 				_position.X += -speed;
 			}
 
-			if (Keyboard.GetState().IsKeyDown(Keys.Right))
+			if (input.Keyboard.IsKeyDown(Keys.Right))
 			{
 				_position.X += speed;
 			}
