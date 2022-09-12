@@ -442,14 +442,12 @@ namespace Odyssey
 				//PlayerName = "Left of Zen",
 			};
 
-			//if (!clientInput.Equals(previousInput))
-			//{
+			// this limits input sending to only when keys are pressed - not great
+			// for when mouse/gamepad input happens! but we'll add that later
 			if (Keyboard.GetState().GetPressedKeys().Length > 0)
 			{
 				defaultClient.SendMessage(MessageType.NetworkInput, clientInput);
 			}
-			//previousInput = clientInput;
-			//}
 
 			// process server queue
 			while (server.MessageQueue.TryDequeue(out var msg))
