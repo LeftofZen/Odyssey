@@ -1,26 +1,21 @@
 ﻿using System.Collections.Concurrent;
-using System.Net;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
-using Core.Networking;
+using Odyssey.Networking;
 using Serilog;
 
 namespace Odyssey.Network
 {
-
-	public class Server
+	public class OdysseyServer
 	{
-		private List<TcpListener> clientList;
+		private List<OdysseyClient> clientList;
 		private TcpListener clientNegotiator;
+		private TcpClient client;
 		public ConcurrentQueue<INetworkMessage> MessageQueue;
 		private bool negotiatorRun = true;
 
-		public IPAddress Hostname = IPAddress.Parse("127.0.0.1");
-		public int Port = 13002;
-
-		public Server()
+		public OdysseyServer()
 		{
-			clientList = new List<TcpListener>();
+			clientList = new List<OdysseyClient>();
 			MessageQueue = new ConcurrentQueue<INetworkMessage>();
 		}
 
@@ -28,96 +23,61 @@ namespace Odyssey.Network
 
 		public bool Start()
 		{
-			Log.Information("Server starting on {name} {port}", Hostname, Port);
-			clientNegotiator = new TcpListener(Hostname, Port);
+			Log.Information("Server starting on {name} {port}", Constants.DefaultHostname, Constants.DefaultPort);
+			clientNegotiator = new TcpListener(Constants.DefaultHostname, Constants.DefaultPort);
 
 			// Start listening for client requests.
-			//if (!clientNegotiator.)
-			{
-				clientNegotiator.Start();
-				clientNegotiatorTask = new Task(ClientLoop);
-				clientNegotiatorTask.Start();
-			}
+			clientNegotiator.Start();
+			clientNegotiatorTask = new Task(ClientLoop);
+			clientNegotiatorTask.Start();
 
 			return true;
 		}
 
-		public bool TryReadMessage<T>(NetworkStream stream, out T tObj) where T : INetworkMessage
+		public void SendMessageToAllClients<T>(NetworkMessageType type, T message) where T : INetworkMessage
 		{
-			// var a = Marshal.SizeOf(typeof(Microsoft.Xna.Framework.Input.MouseState));
-			// var b = Marshal.SizeOf(typeof(Microsoft.Xna.Framework.Input.KeyboardState));
-			// var c = Marshal.SizeOf(typeof(Microsoft.Xna.Framework.Input.GamePadState));
-			// var d = Marshal.SizeOf(typeof(Int32));
-			// Console.WriteLine($"{a},{b},{c},{d}");
-
-			var bytes = new byte[Marshal.SizeOf(typeof(T))];
-			var bytesRead = stream.Read(bytes, 0, bytes.Length);
-
-			if (bytesRead != bytes.Length)
+			foreach (var c in clientList)
 			{
-				//var ex = new Exception("invalid message");
-				Log.Warning("unknown network message");
-				tObj = default;
-				return false;
+				c.SendMessage(type, message);
 			}
+		}
 
-			tObj = Protocol.Deserialise<T>(bytes.AsSpan());
-			return true;
+		public void SendMessageToClient<T>(string playerName, NetworkMessageType type, T message) where T : INetworkMessage
+		{
+			var client = clientList.SingleOrDefault(c => c.PlayerName == playerName);
+			if (client != null)
+			{
+				client.SendMessage(type, message);
+			}
+		}
+
+		public void ReadMessages()
+		{
+			foreach (var c in clientList)
+			{
+				c.ReadMessages();
+			}
 		}
 
 		private void ClientLoop()
 		{
-			Log.Debug("Waiting for a connection... ");
-
-			// Perform a blocking call to accept requests.
-			// You could also use server.AcceptSocket() here.
-			var client = clientNegotiator.AcceptTcpClient();
-			Log.Debug("Connected!");
-			var clientStream = client.GetStream();
-
 			while (negotiatorRun)
 			{
-				if (TryReadMessage<MessageHeader>(clientStream, out var header))
-				{
-					Log.Debug("[Header Received] Type={msg}", header.Type);
+				Log.Debug("Waiting for a connection... ");
 
-					switch (header.Type)
-					{
-						case MessageType.NetworkInput:
-							if (TryReadMessage<NetworkInput>(clientStream, out var input))
-							{
-								MessageQueue.Enqueue(input);
-							}
-							break;
-					}
+				// Perform a blocking call to accept requests.
+				// You could also use server.AcceptSocket() here.
+				if (clientNegotiator.Pending())
+				{
+					clientList.Add(new OdysseyClient(clientNegotiator.AcceptTcpClient()));
+					Log.Debug("Connected!");
 				}
 
-				//int i;
-				//// Loop to receive all the data sent by the client.
-				//while ((i = stream.Read(msgHeaderBuffer, 0, msgHeaderBuffer.Length)) != 0)
-				//{
-				//	// Translate data bytes to a ASCII string.
-				//	data = System.Text.Encoding.ASCII.GetString(msgHeaderBuffer, 0, i);
-				//	Console.WriteLine("Received: {0}", data);
-
-				//	// Process the data sent by the client.
-				//	data = data.ToUpper();
-
-				//	var msg = System.Text.Encoding.ASCII.GetBytes(data);
-
-				//	// Send back a response.
-				//	stream.Write(msg, 0, msg.Length);
-				//	Console.WriteLine("Sent: {0}", data);
-				//}
-
-				//// Shutdown and end connection
-				//client.Close();
-				//const int inputTickRate = 144; // 200hz
-				//Thread.Sleep((int)(1000f / inputTickRate));
+				Thread.Sleep(100);
 			}
 
 			clientNegotiator.Stop();
-			Log.Debug("Disconnected!");
+			Log.Debug("Client listener stopped!");
 		}
 
 		public bool Stop() => negotiatorRun = false;

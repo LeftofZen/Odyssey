@@ -1,40 +1,86 @@
-﻿using System.Net;
+﻿using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
-using Core.Networking;
+using Odyssey.Networking;
+using Odyssey.Networking.Messages;
 using Serilog;
 
 namespace Odyssey.Network
 {
-	public class Client
+	public class OdysseyClient
 	{
-		public IPAddress Hostname;
+		public IPAddress Address;
 		public int Port;
 		private TcpClient tcpClient;
+		public ConcurrentQueue<INetworkMessage> MessageQueue;
+		public string PlayerName;
 
-		public Client(IPAddress hostname, int port)
+		public TcpClient Client => tcpClient;
+
+		public OdysseyClient(IPAddress hostname, int port)
 		{
-			Hostname = hostname;
-			// debug
-			Hostname = IPAddress.Parse("127.0.0.1");
+			Address = hostname;
 			Port = port;
 			tcpClient = new TcpClient();
+			MessageQueue = new ConcurrentQueue<INetworkMessage>();
+		}
+		public OdysseyClient(TcpClient client)
+		{
+			Address = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+			Port = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
+			tcpClient = client;
+			MessageQueue = new ConcurrentQueue<INetworkMessage>();
 		}
 
 		public void Start()
 		{
-			Log.Information("Client connecting on {name} {port}", Hostname, Port);
+			Log.Information("Client connecting on {name} {port}", Address, Port);
 			//tcpClient = new TcpClient();
-			tcpClient.Connect(new IPEndPoint(Hostname, Port));
+			tcpClient.Connect(new IPEndPoint(Address, Port));
 		}
 
 		public void StopClient() => tcpClient.Close();
 
-		public void Update()
+		public void ReadMessages()
 		{
+			if (!tcpClient.Connected)
+			{
+				return;
+			}
 
+			var stream = tcpClient.GetStream();
+			while (true)
+			{
+				if (stream.TryReadMessage<MessageHeader>(out var header))
+				{
+					Log.Debug("[Header Received] Type={msg}", header.Type);
+
+					switch (header.Type)
+					{
+						case NetworkMessageType.NetworkInput:
+							if (stream.TryReadMessage<NetworkInput>(out var ni))
+							{
+								MessageQueue.Enqueue(ni);
+							}
+							break;
+						case NetworkMessageType.WorldUpdate:
+							if (stream.TryReadMessage<WorldUpdate>(out var wu))
+							{
+								MessageQueue.Enqueue(wu);
+							}
+							break;
+						case NetworkMessageType.PlayerUpdate:
+							if (stream.TryReadMessage<PlayerUpdate>(out var pu))
+							{
+								MessageQueue.Enqueue(pu);
+							}
+							break;
+					}
+				}
+			}
 		}
 
-		public void SendMessage<T>(MessageType type, T message) where T : INetworkMessage
+		public void SendMessage<T>(NetworkMessageType type, T message) where T : INetworkMessage
 		{
 			if (tcpClient == null)
 			{

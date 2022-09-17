@@ -1,7 +1,6 @@
 ﻿using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework.Input;
 
-namespace Core.Networking
+namespace Odyssey.Networking
 {
 	public static class Protocol
 	{
@@ -28,47 +27,5 @@ namespace Core.Networking
 
 			return arr;
 		}
-	}
-
-	public enum MessageType
-	{
-		Header,
-		Login,
-		Logout,
-		ChatMessage,
-		NetworkInput
-	}
-
-	public interface INetworkMessage
-	{
-		MessageType Type { get; }
-	}
-
-	[StructLayout(LayoutKind.Sequential)]
-	[Serializable]
-	public struct MessageHeader : INetworkMessage
-	{
-		public MessageType Type { get; set; }
-	}
-
-	public static class Constants
-	{
-		public const int MessageHeaderSize = 8;
-		public const int NetworkInputSize = 128;
-	}
-
-	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	[Serializable]
-	public struct NetworkInput : INetworkMessage
-	{
-		public MouseState Mouse;
-		public KeyboardState Keyboard;
-		public GamePadState Gamepad;
-
-		public long InputTimeUnixMilliseconds;
-
-		//public string PlayerName;
-
-		public MessageType Type => MessageType.NetworkInput;
 	}
 }
