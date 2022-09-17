@@ -1,61 +1,12 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using Core.Networking;
 using Serilog;
 
 namespace Odyssey.Network
 {
-	public static class Helpers
-	{
-		public static T Deserialise<T>(ReadOnlySpan<byte> bytes)
-		{
-			var len = bytes.Length;
-			var buffer = Marshal.AllocHGlobal(len);
-			Marshal.Copy(bytes.ToArray(), 0, buffer, len); // copy to the alloc'd buffer"
-
-			var tObj = (T)Marshal.PtrToStructure(buffer, typeof(T));
-			Marshal.FreeHGlobal(buffer);
-			return tObj;
-		}
-
-		public static ReadOnlySpan<byte> Serialise<T>(T tObj)
-		{
-			var len = Marshal.SizeOf(tObj);
-			var arr = new byte[len];
-			var ptr = Marshal.AllocHGlobal(len);
-
-			Marshal.StructureToPtr(tObj, ptr, true);
-			Marshal.Copy(ptr, arr, 0, len);
-			Marshal.FreeHGlobal(ptr);
-
-			return arr;
-		}
-	}
-
-	public enum MessageType : int
-	{ Header, Login, Logout, ChatMessage, NetworkInput }
-
-	public interface INetworkMessage
-	{
-		MessageType Type { get; }
-	}
-
-	[StructLayout(LayoutKind.Sequential)]
-	[Serializable]
-	public struct MessageHeader : INetworkMessage
-	{
-		public MessageType Type { get; set; }
-	}
-
-	public static class Constants
-	{
-		public const int MessageHeaderSize = 8;
-		public const int NetworkInputSize = 128;
-	}
 
 	public class Server
 	{
@@ -110,7 +61,7 @@ namespace Odyssey.Network
 				return false;
 			}
 
-			tObj = Helpers.Deserialise<T>(bytes.AsSpan());
+			tObj = Protocol.Deserialise<T>(bytes.AsSpan());
 			return true;
 		}
 

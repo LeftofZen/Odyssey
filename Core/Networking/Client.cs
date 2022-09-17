@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using Core.Networking;
 using Serilog;
 
 namespace Odyssey.Network
@@ -49,8 +50,8 @@ namespace Odyssey.Network
 			var stream = tcpClient.GetStream();
 
 			var messageHeader = new MessageHeader() { Type = type };
-			stream.Write(Helpers.Serialise(messageHeader));
-			stream.Write(Helpers.Serialise(message));
+			stream.Write(Protocol.Serialise(messageHeader));
+			stream.Write(Protocol.Serialise(message));
 
 			stream.Flush();
 			//Log.Debug("SendMessage");

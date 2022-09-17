@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Core.Networking;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
@@ -422,9 +423,6 @@ namespace Odyssey
 			// TODO: Unload any non ContentManager content here
 		}
 
-		//private NetworkInput currentInput = new NetworkInput();
-		private NetworkInput previousInput = new NetworkInput();
-
 		/// <summary>
 		/// Allows the game to run logic such as updating the world,
 		/// checking for collisions, gathering input, and playing audio.
@@ -444,10 +442,11 @@ namespace Odyssey
 
 			// this limits input sending to only when keys are pressed - not great
 			// for when mouse/gamepad input happens! but we'll add that later
-			if (Keyboard.GetState().GetPressedKeys().Length > 0)
-			{
-				defaultClient.SendMessage(MessageType.NetworkInput, clientInput);
-			}
+			// for now its fine just to send every frame
+			//if (Keyboard.GetState().GetPressedKeys().Length > 0)
+			//{
+			defaultClient.SendMessage(MessageType.NetworkInput, clientInput);
+			//}
 
 			// process server queue
 			while (server.MessageQueue.TryDequeue(out var msg))
