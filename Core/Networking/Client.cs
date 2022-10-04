@@ -49,7 +49,7 @@ namespace Odyssey.Network
 			}
 
 			var stream = tcpClient.GetStream();
-			while (true)
+			//while (true)
 			{
 				if (stream.TryReadMessage<MessageHeader>(out var header))
 				{
@@ -77,6 +77,7 @@ namespace Odyssey.Network
 							break;
 					}
 				}
+				//Thread.Sleep(100);
 			}
 		}
 
@@ -96,10 +97,15 @@ namespace Odyssey.Network
 			var stream = tcpClient.GetStream();
 
 			var messageHeader = new MessageHeader() { Type = type };
-			stream.Write(Protocol.Serialise(messageHeader));
-			stream.Write(Protocol.Serialise(message));
 
-			stream.Flush();
+			if (stream.Socket.Connected)
+			{
+				stream.Write(Protocol.Serialise(messageHeader));
+				stream.Write(Protocol.Serialise(message));
+
+				stream.Flush();
+			}
+
 			//Log.Debug("SendMessage");
 			//stream.Close();
 		}

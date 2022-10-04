@@ -1,7 +1,9 @@
 ﻿using System;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using MonoGame.Extended;
+using MonoGame.Extended.Input;
 using Odyssey.Entities;
 using Odyssey.Logging;
 using Odyssey.Network;
@@ -20,6 +22,7 @@ namespace Odyssey.Server
 		private SpriteBatch sb;
 		private OdysseyServer server;
 		private InMemorySink logsink;
+		private bool renderLog;
 
 		#region Game State
 
@@ -35,18 +38,21 @@ namespace Odyssey.Server
 
 		public ServerProcess()
 		{
-			graphics = new GraphicsDeviceManager(this);
-			Content.RootDirectory = "Content";
-			IsMouseVisible = true;
-
-			server = new OdysseyServer();
-
 			logsink = new InMemorySink();
 			Log.Logger = new LoggerConfiguration()
 				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
 				.WriteTo.Sink(logsink)
 				.MinimumLevel.Debug()
 				.CreateLogger();
+
+			graphics = new GraphicsDeviceManager(this);
+			Content.RootDirectory = "Content";
+			IsMouseVisible = true;
+			Window.AllowUserResizing = true;
+			Window.Title = "Odyssey (server)";
+
+			server = new OdysseyServer();
+
 		}
 		protected override void OnExiting(object sender, EventArgs args)
 		{
@@ -57,13 +63,15 @@ namespace Odyssey.Server
 		protected override void Initialize()
 		{
 			// world
+			NoiseSettings.NoiseSize = 32;
 			map = new Map(initialMapWidth, initialMapHeight, NoiseHelpers.CreateNoise2D(NoiseSettings))
 			{
 				TileSize = 32
 			};
 
 			// character
-			player.Position = new Vector2(map.Width * tileSize / 2, map.Height * tileSize / 2);
+			//player.Position = new Vector2(map.Width * tileSize / 2, map.Height * tileSize / 2);
+			player.Position = new Vector2(100, 100);
 			player.MoveSpeed = 4f;
 			player.Name = "Left of Zen";
 
@@ -80,6 +88,12 @@ namespace Odyssey.Server
 
 		protected override void Update(GameTime gameTime)
 		{
+			var kb = KeyboardExtended.GetState();
+			if (kb.WasKeyJustDown(Keys.OemTilde))
+			{
+				renderLog = !renderLog;
+			}
+
 			server.ReadMessages();
 			NetworkReceive(gameTime);
 
@@ -116,17 +130,46 @@ namespace Odyssey.Server
 
 		protected override void Draw(GameTime gameTime)
 		{
-			GraphicsDevice.Clear(Color.DarkGray);
+			GraphicsDevice.Clear(Color.LightGray);
 
-			// logs
-			var logStartY = 100;
-			foreach (var log in logsink.Events.TakeLast(30))
+			sb.Begin();
+
+			var scale = 1f / 4f;
+			MapRenderer.Draw(sb, map, (int)(tileSize * scale));
+			EntityRenderer.Draw(sb, player, scale);
+
+			sb.End();
+
+			sb.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+
+			if (renderLog)
 			{
-				Odyssey.Render.String.DrawDebugStringLeftAligned(sb, GameServices.Fonts["Calibri"], log.message, new Vector2(100, logStartY), Color.Red, 1);
-				logStartY += 20;
+				InMemorySinkRenderer.Draw(logsink, sb, 10, 10);
 			}
+
+			sb.End();
 
 			base.Draw(gameTime);
 		}
+	}
+
+	public static class MapRenderer
+	{
+		public static void Draw(SpriteBatch sb, Map map, int tileSize = 32)
+		{
+			for (var y = 0; y < map.Height; y++)
+			{
+				for (var x = 0; x < map.Width; x++)
+				{
+					sb.FillRectangle(new RectangleF(x * tileSize, y * tileSize, tileSize, tileSize), map.At(x, y).Colour);
+				}
+			}
+		}
+	}
+
+	public static class EntityRenderer
+	{
+		public static void Draw(SpriteBatch sb, Player player, float scale)
+			=> sb.FillRectangle(new RectangleF(player.GetPosition().X * scale, player.GetPosition().X * scale, player.GetSize().X * scale, player.GetSize().Y * scale), Color.Chocolate);
 	}
 }

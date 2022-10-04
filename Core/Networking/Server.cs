@@ -23,8 +23,8 @@ namespace Odyssey.Network
 
 		public bool Start()
 		{
-			Log.Information("Server starting on {name} {port}", Constants.DefaultHostname, Constants.DefaultPort);
-			clientNegotiator = new TcpListener(Constants.DefaultHostname, Constants.DefaultPort);
+			Log.Information("Server starting on {name} {port}", Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
+			clientNegotiator = new TcpListener(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
 
 			// Start listening for client requests.
 			clientNegotiator.Start();

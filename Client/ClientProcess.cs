@@ -34,7 +34,7 @@ namespace Odyssey.Client
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;
 
-			client = new OdysseyClient(Constants.DefaultHostname, Constants.DefaultPort);
+			client = new OdysseyClient(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
 			logsink = new InMemorySink();
 
 			Log.Logger = new LoggerConfiguration()
@@ -61,6 +61,11 @@ namespace Odyssey.Client
 
 		protected override void Update(GameTime gameTime)
 		{
+			if (!client.Client.Connected)
+			{
+				client.Start();
+			}
+
 			if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
 			{
 				Exit();

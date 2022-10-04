@@ -10,7 +10,7 @@ namespace Odyssey.Logging
 	{
 		private readonly ITextFormatter _textFormatter = new MessageTemplateTextFormatter("{Timestamp} [{Level}] {Message}{Exception}");
 
-		public ConcurrentQueue<GuiLog> Events { get; } = new ConcurrentQueue<GuiLog>();
+		public ConcurrentQueue<LogEvent> Events { get; } = new ConcurrentQueue<LogEvent>();
 
 		public void Emit(LogEvent logEvent)
 		{
@@ -18,10 +18,7 @@ namespace Odyssey.Logging
 			{
 				throw new ArgumentNullException(nameof(logEvent));
 			}
-
-			var renderSpace = new StringWriter();
-			_textFormatter.Format(logEvent, renderSpace);
-			Events.Enqueue(new GuiLog(renderSpace.ToString(), logEvent.Timestamp, 5000));
+			Events.Enqueue(logEvent);
 		}
 	}
 }

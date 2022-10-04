@@ -17,15 +17,15 @@ namespace Odyssey.Networking
 
 		public static ReadOnlySpan<byte> Serialise<T>(T tObj)
 		{
-			var len = Marshal.SizeOf(tObj);
-			var arr = new byte[len];
-			var ptr = Marshal.AllocHGlobal(len);
+			unsafe
+			{
+				var ptr = Marshal.AllocHGlobal(Marshal.SizeOf(tObj));
+				Marshal.StructureToPtr(tObj, ptr, false);
+				//Marshal.Copy(ptr, arr, 0, len);
+				//Marshal.FreeHGlobal(ptr);
 
-			Marshal.StructureToPtr(tObj, ptr, true);
-			Marshal.Copy(ptr, arr, 0, len);
-			Marshal.FreeHGlobal(ptr);
-
-			return arr;
+				return new ReadOnlySpan<byte>(ptr.ToPointer(), Marshal.SizeOf(tObj));
+			}
 		}
 	}
 }

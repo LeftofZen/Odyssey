@@ -15,37 +15,41 @@ namespace Odyssey
 		public static readonly Dictionary<string, SoundEffect> SoundEffects = new(); // SoundBank??
 		public static readonly Dictionary<string, Song> Songs = new(); // SongCollection??
 		public static InputManager InputManager;
+		public static readonly Random PRNG = new(Constants.Seed);
 
 		public static void LoadContent(ContentManager Content, GraphicsDevice graphicsDevice)
 		{
 			// TODO: use this.Content to load your game content here
-			var texNames = new List<string> { "terrain", "char", "ui", "animals", "grassland" };
-			foreach (var v in texNames)
-			{
-				Textures.Add(v, Content.Load<Texture2D>("textures\\" + v));
-			}
+			//var texNames = new List<string> { "terrain", "char", "ui", "animals", "grassland" };
+			//foreach (var v in texNames)
+			//{
+			//	Textures.Add(v, Content.Load<Texture2D>("textures\\" + v));
+			//}
+
+			Textures.Add("grass", Generation.Textures.GenGrassTexture(graphicsDevice, 32, 32));
 
 			var pixel = new Texture2D(graphicsDevice, 1, 1);
 			pixel.SetData(new Color[] { Color.White });
 			Textures.Add(nameof(pixel), pixel);
 
+			//Content.RootDirectory = "Core\\Content";
 			var fontNames = new List<string> { "Calibri" };
 			foreach (var v in fontNames)
 			{
 				Fonts.Add(v, Content.Load<SpriteFont>("fonts\\" + v));
 			}
 
-			var songNames = new List<string> { "farm_music" };
-			foreach (var v in songNames)
-			{
-				Songs.Add(v, Content.Load<Song>("songs\\" + v));
-			}
+			//var songNames = new List<string> { "farm_music" };
+			//foreach (var v in songNames)
+			//{
+			//	Songs.Add(v, Content.Load<Song>("songs\\" + v));
+			//}
 
-			var sfxNames = new List<string> { "dogbark", "dog2", "ponywhinny", "rooster" };
-			foreach (var v in sfxNames)
-			{
-				SoundEffects.Add(v, Content.Load<SoundEffect>("soundeffects\\" + v));
-			}
+			//var sfxNames = new List<string> { "dogbark", "dog2", "ponywhinny", "rooster" };
+			//foreach (var v in sfxNames)
+			//{
+			//	SoundEffects.Add(v, Content.Load<SoundEffect>("soundeffects\\" + v));
+			//}
 
 			//MediaPlayer.Play(GameServices.Songs["farm_music"]);
 		}

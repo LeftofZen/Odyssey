@@ -35,7 +35,7 @@ namespace Odyssey.World
 				}
 			}
 
-			Trees[10, 10] = 1;
+			//Trees[10, 10] = 1;
 		}
 
 		public Tile At(int x, int y) => Data[x, y];
