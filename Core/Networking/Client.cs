@@ -36,7 +36,15 @@ namespace Odyssey.Network
 		{
 			Log.Information("Client connecting on {name} {port}", Address, Port);
 			//tcpClient = new TcpClient();
-			tcpClient.Connect(new IPEndPoint(Address, Port));
+
+			try
+			{
+				tcpClient.Connect(new IPEndPoint(Address, Port));
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Ex={0}", ex);
+			}
 		}
 
 		public void StopClient() => tcpClient.Close();
@@ -53,12 +61,12 @@ namespace Odyssey.Network
 			{
 				if (stream.TryReadMessage<MessageHeader>(out var header))
 				{
-					Log.Debug("[Header Received] Type={msg}", header.Type);
+					Log.Debug("[ReadMessages] Info=\"Header Received\" Type={msg}", header.Type);
 
 					switch (header.Type)
 					{
 						case NetworkMessageType.NetworkInput:
-							if (stream.TryReadMessage<Messages>(out var ni))
+							if (stream.TryReadMessage<InputUpdate>(out var ni))
 							{
 								MessageQueue.Enqueue(ni);
 							}
@@ -79,6 +87,8 @@ namespace Odyssey.Network
 				}
 				//Thread.Sleep(100);
 			}
+
+			Log.Debug("[ReadMessages] Length={0}", MessageQueue.Count);
 		}
 
 		public bool SendMessage<T>(NetworkMessageType type, T message) where T : struct, INetworkMessage

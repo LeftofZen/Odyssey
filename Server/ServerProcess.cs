@@ -21,8 +21,9 @@ namespace Odyssey.Server
 		private GraphicsDeviceManager graphics;
 		private SpriteBatch sb;
 		private OdysseyServer server;
+
 		private InMemorySink logsink;
-		private bool renderLog;
+		private bool renderLog = true;
 
 		#region Game State
 
@@ -35,6 +36,8 @@ namespace Odyssey.Server
 		private NoiseParams PreviousNoiseSettings { get; set; } = new NoiseParams();
 
 		#endregion
+
+		public Vector2 clientMousePos = Vector2.Zero;
 
 		public ServerProcess()
 		{
@@ -104,23 +107,24 @@ namespace Odyssey.Server
 
 		private void NetworkSend()
 		{
-			server.SendMessageToAllClients(NetworkMessageType.WorldUpdate, new WorldUpdate() { Map = map });
+			server.SendMessageToAllClients(NetworkMessageType.WorldUpdate, new WorldUpdate() { /*Map = map*/ });
 
 			// foreach player
-			server.SendMessageToClient(player.Name, NetworkMessageType.PlayerUpdate, new PlayerUpdate() { Position = player.Position });
+			server.SendMessageToClient(player.Name, NetworkMessageType.PlayerUpdate, new PlayerUpdate() { /*Position = player.Position*/ });
 		}
 
 		private void NetworkReceive(GameTime gameTime)
 		{
 			// process server queue
-			while (server.MessageQueue.TryDequeue(out var msg))
+			foreach (var msg in server.GetServerMessages())
 			{
-				Log.Information("got message in game loop from server queue", msg);
+				Log.Debug("[NetworkReceive] received message {0}", msg.Type);
 				switch (msg.Type)
 				{
 					case NetworkMessageType.NetworkInput:
-						var networkMsg = (Messages)msg;
-						Log.Information("[NetworkInput Message] {inputTime}", networkMsg.InputTimeUnixMilliseconds);
+						var networkMsg = (InputUpdate)msg;
+						Log.Debug("[NetworkInput Message] {0} {1} {2}", networkMsg.InputTimeUnixMilliseconds, networkMsg.Mouse.X, networkMsg.Mouse.Y);
+						clientMousePos = new Vector2(networkMsg.Mouse.X, networkMsg.Mouse.Y);
 						// input handling above, everything else below
 						player.Update(networkMsg, gameTime);
 						break;
@@ -137,6 +141,8 @@ namespace Odyssey.Server
 			var scale = 1f / 4f;
 			MapRenderer.Draw(sb, map, (int)(tileSize * scale));
 			EntityRenderer.Draw(sb, player, scale);
+
+			sb.DrawPoint(clientMousePos, Color.White, 3f);
 
 			sb.End();
 

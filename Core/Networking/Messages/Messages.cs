@@ -1,13 +1,11 @@
 ﻿using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using Odyssey.World;
 
 namespace Odyssey.Networking.Messages
 {
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
-	public struct Messages : INetworkMessage
+	public struct InputUpdate : INetworkMessage
 	{
 		public MouseState Mouse;
 		public KeyboardState Keyboard;
@@ -26,7 +24,7 @@ namespace Odyssey.Networking.Messages
 	{
 		public NetworkMessageType Type => NetworkMessageType.WorldUpdate;
 
-		public Map Map { get; set; }
+		//public Map Map { get; set; }
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -35,6 +33,6 @@ namespace Odyssey.Networking.Messages
 	{
 		public NetworkMessageType Type => NetworkMessageType.PlayerUpdate;
 
-		public Vector2 Position;
+		//public Vector2 Position;
 	}
 }

@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.Extended.Input;
 using MonoGame.ImGui;
 using Odyssey.Entities;
 using Odyssey.Logging;
@@ -18,7 +19,9 @@ namespace Odyssey.Client
 		private GraphicsDeviceManager graphics;
 		private SpriteBatch sb;
 		private OdysseyClient client;
+
 		private InMemorySink logsink;
+		private bool renderLog = true;
 
 		// game state
 		public Map map;
@@ -35,8 +38,8 @@ namespace Odyssey.Client
 			IsMouseVisible = true;
 
 			client = new OdysseyClient(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
-			logsink = new InMemorySink();
 
+			logsink = new InMemorySink();
 			Log.Logger = new LoggerConfiguration()
 				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
 				.WriteTo.Sink(logsink)
@@ -50,6 +53,11 @@ namespace Odyssey.Client
 			camera = new Camera(GraphicsDevice.Viewport);
 			GuiRenderer = new ImGUIRenderer(this).Initialize().RebuildFontAtlas();
 
+			if (!client.Client.Connected)
+			{
+				client.Start();
+			}
+
 			base.Initialize();
 		}
 
@@ -61,14 +69,15 @@ namespace Odyssey.Client
 
 		protected override void Update(GameTime gameTime)
 		{
-			if (!client.Client.Connected)
-			{
-				client.Start();
-			}
-
 			if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
 			{
 				Exit();
+			}
+
+			var kb = KeyboardExtended.GetState();
+			if (kb.WasKeyJustDown(Keys.OemTilde))
+			{
+				renderLog = !renderLog;
 			}
 
 			NetworkSend();
@@ -88,13 +97,14 @@ namespace Odyssey.Client
 			client.ReadMessages();
 			foreach (var msg in client.MessageQueue)
 			{
+				Log.Debug("received message {0}", msg.Type);
 				switch (msg.Type)
 				{
 					case NetworkMessageType.WorldUpdate:
-						map = ((WorldUpdate)msg).Map;
+						/*map = ((WorldUpdate)msg).Map;*/
 						break;
 					case NetworkMessageType.PlayerUpdate:
-						player.SetPosition(((PlayerUpdate)msg).Position);
+						/*player.SetPosition(((PlayerUpdate)msg).Position);*/
 						break;
 				}
 			}
@@ -102,7 +112,7 @@ namespace Odyssey.Client
 
 		private void NetworkSend()
 		{
-			var clientInput = new Messages()
+			var clientInput = new InputUpdate()
 			{
 				Mouse = Mouse.GetState(),
 				Keyboard = Keyboard.GetState(),
@@ -164,6 +174,8 @@ namespace Odyssey.Client
 				}
 			}
 
+
+
 			//DrawMap(sb, mapLookup["map1"]);
 			//DrawDebugString(sb, fontLookup["Calibri"], $"DrawCount={drawCount}", new Vector2(8, 8));
 			//sb.Draw(texLookup["terrain"], Vector2.Zero, Color.White);
@@ -191,6 +203,15 @@ namespace Odyssey.Client
 			//}
 
 			//sb.End();
+
+			sb.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+
+			if (renderLog)
+			{
+				InMemorySinkRenderer.Draw(logsink, sb, 10, 10);
+			}
+
+			sb.End();
 
 			//Render.DrawImGui(GuiRenderer, gameTime);
 

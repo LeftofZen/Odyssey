@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using Microsoft.Xna.Framework;
 using Odyssey.Networking;
 using Serilog;
@@ -11,14 +10,9 @@ namespace Odyssey.Network
 		private List<OdysseyClient> clientList;
 		private TcpListener clientNegotiator;
 		private TcpClient client;
-		public ConcurrentQueue<INetworkMessage> MessageQueue;
 		private bool negotiatorRun = true;
 
-		public OdysseyServer()
-		{
-			clientList = new List<OdysseyClient>();
-			MessageQueue = new ConcurrentQueue<INetworkMessage>();
-		}
+		public OdysseyServer() => clientList = new List<OdysseyClient>();
 
 		private Task clientNegotiatorTask;
 
@@ -33,6 +27,17 @@ namespace Odyssey.Network
 			clientNegotiatorTask.Start();
 
 			return true;
+		}
+
+		public IEnumerable<INetworkMessage> GetServerMessages()
+		{
+			foreach (var c in clientList)
+			{
+				foreach (var m in c.MessageQueue)
+				{
+					yield return m;
+				}
+			}
 		}
 
 		public void Update(GameTime gameTime)
