@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net6.0</TargetFramework>
+		<RootNamespace>Odyssey.Server</RootNamespace>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="MonoGame.Extended.Input" Version="3.8.0" />
+		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303">
+			<PrivateAssets>All</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Core\Core.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<MonoGameContentReference Update="..\Content\Content.mgcb" Link="Content.mgcb" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Update="Content\Calibri.spritefont">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Content\Content.mgcb">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+</Project>
