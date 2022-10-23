@@ -58,7 +58,7 @@ namespace Odyssey.Network
 					switch (header.Type)
 					{
 						case NetworkMessageType.NetworkInput:
-							if (stream.TryReadMessage<NetworkInput>(out var ni))
+							if (stream.TryReadMessage<Messages>(out var ni))
 							{
 								MessageQueue.Enqueue(ni);
 							}
@@ -81,30 +81,42 @@ namespace Odyssey.Network
 			}
 		}
 
-		public void SendMessage<T>(NetworkMessageType type, T message) where T : INetworkMessage
+		public bool SendMessage<T>(NetworkMessageType type, T message) where T : struct, INetworkMessage
 		{
 			if (tcpClient == null)
 			{
-				return;
+				return false;
 			}
 
 			if (!tcpClient.Connected)
 			{
 				Log.Error("couldn't connect to server");
-				return;
+				StopClient();
+				return false;
 			}
 
 			var stream = tcpClient.GetStream();
 
-			var messageHeader = new MessageHeader() { Type = type };
 
 			if (stream.Socket.Connected)
 			{
-				stream.Write(Protocol.Serialise(messageHeader));
-				stream.Write(Protocol.Serialise(message));
+				var msg = Protocol.Serialise(message);
+				var messageHeader = new MessageHeader() { Type = type, Length = msg.Length };
 
-				stream.Flush();
+				try
+				{
+					stream.Write(Protocol.Serialise(messageHeader));
+					stream.Write(msg);
+					stream.Flush();
+				}
+				catch (Exception se)
+				{
+					Log.Error(se.Message);
+					return false;
+				}
 			}
+
+			return true;
 
 			//Log.Debug("SendMessage");
 			//stream.Close();

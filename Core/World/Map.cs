@@ -2,18 +2,19 @@
 
 namespace Odyssey.World
 {
-	public class Map
+	[Serializable]
+	public struct Map
 	{
-		public int Width;
-		public int Height;
-		public int TileSize;
-		private Tile[,] Data;
-		public int[,] Trees; // -1 = no tree, 0->infinity = tree id
+		public int Width { get; set; } = 0;
+		public int Height { get; set; } = 0;
+		public int TileSize { get; set; } = 0;
+		private Tile[,] Data { get; set; } = null;
+		public int[,] Trees = null; // -1 = no tree, 0->infinity = tree id
 
 		public bool DrawNoiseOnly = true;
 		public bool UseColourMap = false;
 
-		public Map(int width, int height) => InitialiseMap(width, height);
+		public bool IsInitialised = false;
 
 		private void InitialiseMap(int width, int height)
 		{
@@ -36,9 +37,13 @@ namespace Odyssey.World
 			}
 
 			//Trees[10, 10] = 1;
+
+			IsInitialised = true;
 		}
 
 		public Tile At(int x, int y) => Data[x, y];
+
+		public Map(int width, int height) => InitialiseMap(width, height);
 
 		public Map(int width, int height, double[] data) : this(width, height) => SetData(data);
 

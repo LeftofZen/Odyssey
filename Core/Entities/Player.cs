@@ -20,7 +20,7 @@ namespace Odyssey.Entities
 		public float MoveSpeed;
 		public string Name; // playerId
 
-		public void Update(NetworkInput input, GameTime gameTime)
+		public void Update(Messages input, GameTime gameTime)
 		{
 			UpdateKinematics(gameTime);
 

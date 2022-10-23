@@ -6,7 +6,7 @@ namespace Odyssey.Networking
 {
 	public static class NetworkStreamExtensions
 	{
-		public static bool TryReadMessage<T>(this NetworkStream stream, out T tObj) where T : INetworkMessage
+		public static bool TryReadMessage<T>(this NetworkStream stream, out T tObj) where T : struct, INetworkMessage
 		{
 			var bytes = new byte[Marshal.SizeOf(typeof(T))];
 			tObj = default;

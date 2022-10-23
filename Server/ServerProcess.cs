@@ -75,7 +75,7 @@ namespace Odyssey.Server
 			player.MoveSpeed = 4f;
 			player.Name = "Left of Zen";
 
-			server.Start();
+			_ = server.Start();
 
 			base.Initialize();
 		}
@@ -94,9 +94,9 @@ namespace Odyssey.Server
 				renderLog = !renderLog;
 			}
 
-			server.ReadMessages();
-			NetworkReceive(gameTime);
+			server.Update(gameTime);
 
+			NetworkReceive(gameTime);
 			NetworkSend();
 
 			base.Update(gameTime);
@@ -119,7 +119,7 @@ namespace Odyssey.Server
 				switch (msg.Type)
 				{
 					case NetworkMessageType.NetworkInput:
-						var networkMsg = (NetworkInput)msg;
+						var networkMsg = (Messages)msg;
 						Log.Information("[NetworkInput Message] {inputTime}", networkMsg.InputTimeUnixMilliseconds);
 						// input handling above, everything else below
 						player.Update(networkMsg, gameTime);

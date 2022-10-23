@@ -7,7 +7,7 @@ namespace Odyssey.Networking.Messages
 {
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
-	public struct NetworkInput : INetworkMessage
+	public struct Messages : INetworkMessage
 	{
 		public MouseState Mouse;
 		public KeyboardState Keyboard;
@@ -26,7 +26,7 @@ namespace Odyssey.Networking.Messages
 	{
 		public NetworkMessageType Type => NetworkMessageType.WorldUpdate;
 
-		public Map Map;
+		public Map Map { get; set; }
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]

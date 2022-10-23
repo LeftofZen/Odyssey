@@ -102,7 +102,7 @@ namespace Odyssey.Client
 
 		private void NetworkSend()
 		{
-			var clientInput = new NetworkInput()
+			var clientInput = new Messages()
 			{
 				Mouse = Mouse.GetState(),
 				Keyboard = Keyboard.GetState(),
@@ -116,7 +116,10 @@ namespace Odyssey.Client
 			// for now its fine just to send every frame
 			if (Keyboard.GetState().GetPressedKeys().Length > 0)
 			{
-				client.SendMessage(NetworkMessageType.NetworkInput, clientInput);
+				if (!client.SendMessage(NetworkMessageType.NetworkInput, clientInput))
+				{
+					Log.Error("Couldn't send message: {0}", nameof(NetworkMessageType.NetworkInput));
+				}
 			}
 		}
 
@@ -127,7 +130,7 @@ namespace Odyssey.Client
 			sb.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, camera.Transform);
 
 			// draw world
-			if (map != null)
+			if (map.IsInitialised)
 			{
 				map.Draw(sb, gameTime, camera);
 

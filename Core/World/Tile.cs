@@ -2,7 +2,8 @@
 
 namespace Odyssey.World
 {
-	public class Tile
+	[Serializable]
+	public struct Tile
 	{
 		// to port from noise map
 		public double Value

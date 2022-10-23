@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Net.Sockets;
+using Microsoft.Xna.Framework;
 using Odyssey.Networking;
 using Serilog;
 
@@ -27,22 +28,33 @@ namespace Odyssey.Network
 			clientNegotiator = new TcpListener(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
 
 			// Start listening for client requests.
-			clientNegotiator.Start();
+
 			clientNegotiatorTask = new Task(ClientLoop);
 			clientNegotiatorTask.Start();
 
 			return true;
 		}
 
-		public void SendMessageToAllClients<T>(NetworkMessageType type, T message) where T : INetworkMessage
+		public void Update(GameTime gameTime)
+		{
+			ReadMessages();
+
+			// purge closed clients
+			clientList = clientList.Where(c => c.Client.Connected).ToList();
+		}
+
+		public void SendMessageToAllClients<T>(NetworkMessageType type, T message) where T : struct, INetworkMessage
 		{
 			foreach (var c in clientList)
 			{
-				c.SendMessage(type, message);
+				if (!c.SendMessage(type, message))
+				{
+					c.StopClient();
+				}
 			}
 		}
 
-		public void SendMessageToClient<T>(string playerName, NetworkMessageType type, T message) where T : INetworkMessage
+		public void SendMessageToClient<T>(string playerName, NetworkMessageType type, T message) where T : struct, INetworkMessage
 		{
 			var client = clientList.SingleOrDefault(c => c.PlayerName == playerName);
 			if (client != null)
@@ -61,10 +73,11 @@ namespace Odyssey.Network
 
 		private void ClientLoop()
 		{
+			Log.Debug("Waiting for a connection... ");
+
+			clientNegotiator.Start();
 			while (negotiatorRun)
 			{
-				Log.Debug("Waiting for a connection... ");
-
 				// Perform a blocking call to accept requests.
 				// You could also use server.AcceptSocket() here.
 				if (clientNegotiator.Pending())
