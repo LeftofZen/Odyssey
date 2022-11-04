@@ -37,7 +37,7 @@ namespace Odyssey.Entities
 			{
 				if (id != value)
 				{
-					Log.Debug("[Player::Id_Set] {0}", value);
+					Log.Debug("[Player::Id_Set] {id}", value);
 					id = value;
 				}
 			}

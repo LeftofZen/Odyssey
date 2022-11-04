@@ -1,38 +1,55 @@
 ﻿namespace Odyssey.Networking
 {
-	public class MessageStreamReader
+	public interface IMessageStreamDeserialiser<T>
+	{
+		T Deserialise(Header hdr, byte[] bytes);
+	}
+
+	public class ByteDeserialiser : IMessageStreamDeserialiser<byte[]>
+	{
+		public byte[] Deserialise(Header hdr, byte[] bytes)
+			=> bytes;
+	}
+
+	public class MessageStreamReader<T>
 	{
 		private readonly BufferedStream bs;
-
-		//private Queue<INetworkMessage> msgs = new();
-		private Queue<(Header hdr, byte[] msg)> delimitedMsgs = new();
 
 		private readonly byte[] cbuf;
 		private int ptrStart = 0;
 		private int ptrEnd = 0; // exclusive
 
-		//private readonly Func<uint, Type> msgLookup;
-
 		public int MaxMsgSize { get; init; }
 		public const int DefaultMaxMsgSize = 1024;
 		public const int HeaderSize = 8;
-		//public Queue<INetworkMessage> MessageQueue => msgs;
-		public Queue<(Header hdr, byte[] msg)> DelimitedMessageQueue => delimitedMsgs;
+		public Queue<(Header hdr, T msg)> DelimitedMessageQueue { get; init; } = new();
 
 		private int DataAvailable => ptrEnd - ptrStart;
 
-		public MessageStreamReader(Stream stream, Func<uint, Type> lookup = null, int maxMsgSize = DefaultMaxMsgSize)
+		private IMessageStreamDeserialiser<T> deserialiser;
+
+		public MessageStreamReader(Stream stream, IMessageStreamDeserialiser<T> deserialiser, int maxMsgSize = DefaultMaxMsgSize)
 		{
 			MaxMsgSize = maxMsgSize;
 			bs = new BufferedStream(stream, MaxMsgSize);
 			cbuf = new byte[MaxMsgSize];
-			//msgLookup = lookup;
+			this.deserialiser = deserialiser;
 		}
 
 		public void Update()
 		{
-			//Log.Debug("[MessageStream::Update]");
+			try
+			{
+				UpdateInternal();
+			}
+			catch (Exception)
+			{
+				//Log.Error(ex, "Couldn't read from stream");
+			}
+		}
 
+		private void UpdateInternal()
+		{
 			// read from stream
 			var read = bs.Read(cbuf, ptrEnd, 256);
 			ptrEnd += read;
@@ -50,13 +67,9 @@
 				{
 					var msgBytes = rom.Slice(ptrStart + HeaderSize, (int)length);
 
-					// internal deserialisation
-					//var dmsg = (INetworkMessage)MessagePackSerializer.Deserialize(msgLookup(type), msgBytes);
-					//msgs.Enqueue(dmsg);
-
 					// external deserialisation
-					var entry = (new Header() { Length = length, Type = type }, msgBytes.ToArray());
-					delimitedMsgs.Enqueue(entry);
+					var hdr = new Header() { Type = type, Length = length };
+					DelimitedMessageQueue.Enqueue((hdr, deserialiser.Deserialise(hdr, msgBytes.ToArray())));
 
 					ptrStart += HeaderSize + (int)length;
 				}

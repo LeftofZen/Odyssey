@@ -1,6 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Odyssey;
 using Serilog;
 
 namespace Odyssey.Entities.Animal
@@ -34,7 +33,7 @@ namespace Odyssey.Entities.Animal
 			{
 				if (id != value)
 				{
-					Log.Debug("[Player::Id_Set] {0}", value);
+					Log.Debug("[Player::Id_Set] {id}", value);
 					id = value;
 				}
 			}

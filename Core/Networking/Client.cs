@@ -14,11 +14,10 @@ namespace Odyssey.Networking
 		public bool IsLoggedIn { get; set; }
 		public bool LoginMessageInFlight { get; set; }
 
-		private MessageStreamWriter writer;
-		private MessageStreamReader reader;
+		private MessageStreamWriter<INetworkMessage> writer;
+		private MessageStreamReader<INetworkMessage> reader;
 
-		// TODO: fix
-		public Queue<INetworkMessage>? Messages => new(); // reader?.MessageQueue;
+		public Queue<(Header hdr, INetworkMessage msg)>? Messages => reader?.DelimitedMessageQueue;
 
 		public OdysseyClient(IPAddress hostname, int port)
 		{
@@ -26,7 +25,7 @@ namespace Odyssey.Networking
 			Port = port;
 			TcpClient = new TcpClient();
 
-			Log.Debug("New OdysseyClient via endpoint {hostname} {port}", Address, Port);
+			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Address, Port);
 		}
 
 		public OdysseyClient(TcpClient client)
@@ -35,28 +34,28 @@ namespace Odyssey.Networking
 			Port = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
 			TcpClient = client;
 
-			Log.Debug("New OdysseyClient via endpoint {hostname} {port}", Address, Port);
+			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Address, Port);
 
 			InitMessaging();
 		}
 
 		private void InitMessaging()
 		{
-			Log.Debug("[InitMessaging] {connected}", TcpClient.Connected);
+			Log.Debug("[Client::InitMessaging] {connected}", TcpClient.Connected);
 			if (TcpClient.Connected)
 			{
 				readMsgs = true;
 
-				writer = new MessageStreamWriter(TcpClient.GetStream());
-				reader = new MessageStreamReader(TcpClient.GetStream(), MessageLookup.ToTypeFunc);
+				writer = new MessageStreamWriter<INetworkMessage>(TcpClient.GetStream(), new MessagePackSerialiser());
+				reader = new MessageStreamReader<INetworkMessage>(TcpClient.GetStream(), new MessagePackDeserialiser());
 
-				msgReaderTask = Task.Run(ReadMessages);
+				msgReaderTask = Task.Run(ReadMessageLoop);
 			}
 		}
 
 		public void Start()
 		{
-			Log.Information("[Start] Client connecting on {name} {port}", Address, Port);
+			Log.Information("[Client::Start] Client connecting on {name} {port}", Address, Port);
 			//tcpClient = new TcpClient();
 
 			try
@@ -74,18 +73,22 @@ namespace Odyssey.Networking
 
 		public bool Login(string user, string pass)
 		{
-			Log.Information("[Login] {user} {pass}", "Bob", "Foo");
-			LoginMessageInFlight = true;
-			return QueueMessage(new LoginRequest() { Username = "Bob", Password = "Foo" });
+			if (LoginMessageInFlight == false)
+			{
+				Log.Information("[Client::Login] {user} {pass}", "Bob", "Foo");
+				LoginMessageInFlight = true;
+				return QueueMessage(new LoginRequest() { Username = "Bob", Password = "Foo" });
+			}
+			return false;
 		}
 
-		public void StopClient() => TcpClient.Close();
+		public void StopClient() => TcpClient.Close(); // cancel/join msgReaderTask as well
 
 		private bool readMsgs;
 
-		public void ReadMessages()
+		public void ReadMessageLoop()
 		{
-			Log.Debug("[ReadMessages] Client message loop starting");
+			Log.Debug("[Client::ReadMessages] Client message loop starting {readMsgs}", readMsgs);
 			while (readMsgs)
 			{
 				if (!TcpClient.Connected)
@@ -99,7 +102,7 @@ namespace Odyssey.Networking
 
 					if (reader is null)
 					{
-						Log.Error("[ReadMessages] Message reader is null");
+						Log.Error("[Client::ReadMessages] Message reader is null");
 						return;
 					}
 				}
@@ -108,11 +111,11 @@ namespace Odyssey.Networking
 			}
 		}
 
-		public void FlushMessages() => writer.Flush();
+		public void FlushMessages() => writer.Update();
 
 		public bool QueueMessage<T>(T message) where T : struct, INetworkMessage
 		{
-			Log.Debug("[QueueMessage] {0}", message);
+			Log.Debug("[Client::QueueMessage] {type}", message.Type);
 
 			if (writer is null)
 			{
@@ -120,7 +123,7 @@ namespace Odyssey.Networking
 
 				if (writer is null)
 				{
-					Log.Error("[QueueMessage] Message writer is null");
+					Log.Error("[Client::QueueMessage] Message writer is null");
 					return false;
 				}
 			}

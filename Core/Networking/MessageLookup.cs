@@ -4,8 +4,6 @@ namespace Odyssey.Networking
 {
 	public static class MessageLookup
 	{
-		public static Func<uint, Type> ToTypeFunc = (type) => ToType[(NetworkMessageType)type];
-
 		public static Dictionary<NetworkMessageType, Type> ToType = new()
 		{
 			{ NetworkMessageType.LoginRequest, typeof(LoginRequest) },

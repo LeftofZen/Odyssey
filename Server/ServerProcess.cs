@@ -129,7 +129,7 @@ namespace Odyssey.Server
 		private void NetworkReceive(GameTime gameTime)
 		{
 			// process server queue
-			foreach (var (client, msg) in server.GetServerMessages())
+			foreach (var (client, msg) in server.GetReceivedMessages())
 			{
 				if (msg is InputUpdate networkMsg)
 				{
@@ -147,6 +147,7 @@ namespace Odyssey.Server
 						//server.SendMessageToClient()
 						// user already logged in
 						Log.Warning("[NetworkReceive] Player already logged in: {user}", loginMsg.Username);
+						break;
 					}
 
 					// todo: look up player data from a database, eg:

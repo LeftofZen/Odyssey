@@ -106,15 +106,17 @@ namespace Odyssey.Client
 				return;
 			}
 
-			while (client.Messages.TryDequeue(out var msg))
+			while (client.Messages.TryDequeue(out var dmsg))
 			{
-				Log.Debug("[NetworkReceive] To={0} Message={2}", player.Username, msg.ToString());
-				if (msg is LoginResponse loginResponse)
+				Log.Debug("[NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
+				if (dmsg.msg is LoginResponse loginResponse)
 				{
+					// if loginResponse == successful
 					player.Id = loginResponse.ClientId;
 					client.ControllingEntity = player;
 					client.LoginMessageInFlight = false;
-					Log.Information("Player \"{0}\" logged in with id {1}", player.DisplayName, player.Id);
+					client.IsLoggedIn = true;
+					Log.Information("\"{player}\" logged in with {id}", player.DisplayName, player.Id);
 				}
 			}
 
@@ -144,7 +146,7 @@ namespace Odyssey.Client
 			{
 				if (!client.QueueMessage(clientInput))
 				{
-					Log.Error("Couldn't send message: {0}", nameof(NetworkMessageType.InputUpdate));
+					Log.Error("Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
 				}
 			}
 

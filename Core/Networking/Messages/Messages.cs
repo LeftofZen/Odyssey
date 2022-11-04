@@ -93,6 +93,7 @@ namespace Odyssey.Networking.Messages
 		public uint Type => (uint)NetworkMessageType.ChatMessage;
 		public Guid ClientId { get; init; }
 		public bool RequiresLogin => true;
+		public string Message { get; init; }
 	}
 
 }
