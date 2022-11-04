@@ -13,6 +13,7 @@ using Odyssey.Noise;
 using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
+using Serilog.Exceptions;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace Odyssey.Server
@@ -46,6 +47,7 @@ namespace Odyssey.Server
 			Log.Logger = new LoggerConfiguration()
 				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
 				.WriteTo.Sink(logsink)
+				.Enrich.WithExceptionDetails()
 				.MinimumLevel.Debug()
 				.CreateLogger();
 

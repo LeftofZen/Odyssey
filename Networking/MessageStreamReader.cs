@@ -1,4 +1,6 @@
-﻿namespace Odyssey.Networking
+﻿using Serilog;
+
+namespace Odyssey.Networking
 {
 	public interface IMessageStreamDeserialiser<T>
 	{
@@ -42,9 +44,9 @@
 			{
 				UpdateInternal();
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				//Log.Error(ex, "Couldn't read from stream");
+				Log.Error(ex, "Couldn't read from stream");
 			}
 		}
 

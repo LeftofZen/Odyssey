@@ -11,6 +11,7 @@ using Odyssey.Networking.Messages;
 using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
+using Serilog.Exceptions;
 
 namespace Odyssey.Client
 {
@@ -43,6 +44,7 @@ namespace Odyssey.Client
 			Log.Logger = new LoggerConfiguration()
 				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
 				.WriteTo.Sink(logsink)
+				.Enrich.WithExceptionDetails()
 				.MinimumLevel.Debug()
 				.CreateLogger();
 		}
