@@ -11,7 +11,7 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\Core\Core.csproj" />
+		<ProjectReference Include="..\Core\Common.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<MonoGameContentReference Update="..\Content\Content.mgcb" Link="Content.mgcb" />

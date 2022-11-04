@@ -1,10 +1,9 @@
-﻿namespace Odyssey.Networking
+﻿using Odyssey.Networking.Messages;
+
+namespace Odyssey.Networking
 {
 	public enum NetworkMessageType
 	{
-		Header,
-		ChatMessage,
-
 		#region Server-Specific
 		LoginResponse,
 		LogoutResponse,
@@ -13,9 +12,13 @@
 		#endregion
 
 		#region Client-Specific
-		Login,
-		Logout,
-		NetworkInput,
+		LoginRequest,
+		LogoutRequest,
+		InputUpdate,
+		#endregion
+
+		#region TwoWay
+		ChatMessage,
 		#endregion
 	}
 

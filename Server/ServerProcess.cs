@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -6,10 +7,10 @@ using MonoGame.Extended;
 using MonoGame.Extended.Input;
 using Odyssey.Entities;
 using Odyssey.Logging;
-using Odyssey.Network;
 using Odyssey.Networking;
 using Odyssey.Networking.Messages;
 using Odyssey.Noise;
+using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
@@ -27,8 +28,8 @@ namespace Odyssey.Server
 
 		#region Game State
 
-		private readonly Player player = new();
-		private Map map;
+		private GameState gameState;
+
 		private const int initialMapWidth = 32;
 		private const int initialMapHeight = 32;
 		private const int tileSize = 32;
@@ -54,6 +55,11 @@ namespace Odyssey.Server
 			Window.AllowUserResizing = true;
 			Window.Title = "Odyssey (server)";
 
+			gameState = new()
+			{
+				Entities = new()
+			};
+
 			server = new OdysseyServer();
 
 		}
@@ -67,16 +73,20 @@ namespace Odyssey.Server
 		{
 			// world
 			NoiseSettings.NoiseSize = 32;
-			map = new Map(initialMapWidth, initialMapHeight, NoiseHelpers.CreateNoise2D(NoiseSettings))
+			gameState.Map = new Map(initialMapWidth, initialMapHeight, NoiseHelpers.CreateNoise2D(NoiseSettings))
 			{
 				TileSize = 32
 			};
 
 			// character
 			//player.Position = new Vector2(map.Width * tileSize / 2, map.Height * tileSize / 2);
-			player.Position = new Vector2(100, 100);
-			player.MoveSpeed = 4f;
-			player.Name = "Left of Zen";
+			//var player = new Player
+			//{
+			//	Id = Guid.NewGuid(),
+			//	Position = new Vector2(100, 100),
+			//	MoveSpeed = 4f,
+			//};
+			//gameState.Entities.Add(player);
 
 			_ = server.Start();
 
@@ -107,27 +117,52 @@ namespace Odyssey.Server
 
 		private void NetworkSend()
 		{
-			server.SendMessageToAllClients(NetworkMessageType.WorldUpdate, new WorldUpdate() { /*Map = map*/ });
+			//server.SendMessageToAllClients(new WorldUpdate() { /*Map = map*/ });
 
-			// foreach player
-			server.SendMessageToClient(player.Name, NetworkMessageType.PlayerUpdate, new PlayerUpdate() { /*Position = player.Position*/ });
+			// foreach client, send the player info to each other client
+			foreach (var e in gameState.Entities)
+			{
+				server.SendMessageToAllClientsExcept(new PlayerUpdate() { /*Position = player.Position*/ }, e);
+			}
 		}
 
 		private void NetworkReceive(GameTime gameTime)
 		{
 			// process server queue
-			foreach (var msg in server.GetServerMessages())
+			foreach (var (client, msg) in server.GetServerMessages())
 			{
-				Log.Debug("[NetworkReceive] received message {0}", msg.Type);
-				switch (msg.Type)
+				if (msg is InputUpdate networkMsg)
 				{
-					case NetworkMessageType.NetworkInput:
-						var networkMsg = (InputUpdate)msg;
-						Log.Debug("[NetworkInput Message] {0} {1} {2}", networkMsg.InputTimeUnixMilliseconds, networkMsg.Mouse.X, networkMsg.Mouse.Y);
-						clientMousePos = new Vector2(networkMsg.Mouse.X, networkMsg.Mouse.Y);
-						// input handling above, everything else below
-						player.Update(networkMsg, gameTime);
-						break;
+					Log.Debug("[NetworkInput Message] {time} {x} {y}", networkMsg.InputTimeUnixMilliseconds, networkMsg.Mouse.X, networkMsg.Mouse.Y);
+					clientMousePos = new Vector2(networkMsg.Mouse.X, networkMsg.Mouse.Y);
+					// input handling above, everything else below
+					var entity = gameState.Entities.Where(e => e.Id == networkMsg.ClientId).Single();
+					((Player)entity).Update(networkMsg, gameTime);
+				}
+
+				if (msg is LoginRequest loginMsg)
+				{
+					if (server.GetConnectedEntities().OfType<Player>().Any(p => p.Username == loginMsg.Username))
+					{
+						//server.SendMessageToClient()
+						// user already logged in
+						Log.Warning("[NetworkReceive] Player already logged in: {user}", loginMsg.Username);
+					}
+
+					// todo: look up player data from a database, eg:
+					// var player = db.LoadPlayer(loginMsg.Username, loginMsg.Password);
+					// for now we'll just always force-make a new player
+					var uid = Guid.NewGuid();
+					client.ControllingEntity = new Player() { Username = loginMsg.Username, Password = loginMsg.Password, Id = uid };
+
+					Log.Information("[NetworkReceive] Player logged in: {user}", loginMsg.Username);
+
+					_ = client.QueueMessage(new LoginResponse() { ClientId = uid });
+				}
+
+				if (msg is LogoutRequest logoutMsg)
+				{
+					Log.Information("[NetworkReceive] Player logged out: {pass}", logoutMsg.Username);
 				}
 			}
 		}
@@ -139,8 +174,12 @@ namespace Odyssey.Server
 			sb.Begin();
 
 			var scale = 1f / 4f;
-			MapRenderer.Draw(sb, map, (int)(tileSize * scale));
-			EntityRenderer.Draw(sb, player, scale);
+			MapRenderer.Draw(sb, gameState.Map, (int)(tileSize * scale));
+
+			foreach (var e in gameState.Entities)
+			{
+				EntityRenderer.Draw(sb, e, scale);
+			}
 
 			sb.DrawPoint(clientMousePos, Color.White, 3f);
 
@@ -175,7 +214,10 @@ namespace Odyssey.Server
 
 	public static class EntityRenderer
 	{
-		public static void Draw(SpriteBatch sb, Player player, float scale)
-			=> sb.FillRectangle(new RectangleF(player.GetPosition().X * scale, player.GetPosition().X * scale, player.GetSize().X * scale, player.GetSize().Y * scale), Color.Chocolate);
+		public static void Draw(SpriteBatch sb, IEntity entity, float scale)
+		{
+			sb.FillRectangle(new RectangleF(entity.Position.X * scale, entity.Position.X * scale, entity.GetSize().X * scale, entity.GetSize().Y * scale), Color.Chocolate);
+			sb.DrawDebugStringCentered(GameServices.Fonts.First().Value, entity.DisplayName, entity.Position, Color.White);
+		}
 	}
 }

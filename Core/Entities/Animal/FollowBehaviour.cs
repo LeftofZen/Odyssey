@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Odyssey;
 
-namespace Core.Entities.Animal
+namespace Odyssey.Entities.Animal
 {
 	public class FollowBehaviour : IBehaviour
 	{
@@ -29,11 +29,11 @@ namespace Core.Entities.Animal
 				dir.Normalize();
 				var amount = MathHelper.Clamp(distanceFromTarget, 0, TargetDistanceTolerance) / TargetDistanceTolerance;
 				var distanceModifier = MathHelper.SmoothStep(0f, 1f, amount);
-				owner.Acceleration += dir * owner.GetAcceleration() * distanceModifier;
+				owner.Acceleration += dir * owner.Acceleration * distanceModifier;
 			}
 
 			// we're at target, stop
-			if (distanceFromTarget < owner.GetAcceleration())
+			if (distanceFromTarget < owner.Acceleration.Length())
 			{
 				atTarget = true;
 			}

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Odyssey;
 
-namespace Core.Entities.Animal
+namespace Odyssey.Entities.Animal
 {
 	public interface IBehaviour
 	{

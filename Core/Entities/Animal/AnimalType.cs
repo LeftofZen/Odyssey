@@ -1,4 +1,4 @@
-﻿namespace Core.Entities.Animal
+﻿namespace Odyssey.Entities.Animal
 {
 	public enum AnimalType
 	{

@@ -8,7 +8,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csp
 		{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05} = {9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Core\Common.csproj", "{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}"
+	ProjectSection(ProjectDependencies) = postProject
+		{157EA69C-9692-48B9-B7CB-A743AE4007FC} = {157EA69C-9692-48B9-B7CB-A743AE4007FC}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csproj", "{2D5E6BE8-294A-4C01-B451-2812099D2A40}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -16,6 +19,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csp
 	EndProjectSection
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Content", "Content\Content.shproj", "{A0CDBD0E-3A41-42B7-9425-A838BC2C7383}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Networking", "Networking\Networking.csproj", "{157EA69C-9692-48B9-B7CB-A743AE4007FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkTesting", "NetworkTesting\NetworkTesting.csproj", "{3F8342A0-238D-4CE0-AFEE-BE906705E2FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,6 +42,14 @@ Global
 		{2D5E6BE8-294A-4C01-B451-2812099D2A40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D5E6BE8-294A-4C01-B451-2812099D2A40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D5E6BE8-294A-4C01-B451-2812099D2A40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{157EA69C-9692-48B9-B7CB-A743AE4007FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{157EA69C-9692-48B9-B7CB-A743AE4007FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{157EA69C-9692-48B9-B7CB-A743AE4007FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{157EA69C-9692-48B9-B7CB-A743AE4007FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F8342A0-238D-4CE0-AFEE-BE906705E2FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F8342A0-238D-4CE0-AFEE-BE906705E2FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F8342A0-238D-4CE0-AFEE-BE906705E2FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F8342A0-238D-4CE0-AFEE-BE906705E2FD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

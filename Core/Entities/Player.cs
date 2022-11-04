@@ -1,7 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.Extended;
 using Odyssey.Networking.Messages;
+using Serilog;
 
 namespace Odyssey.Entities
 {
@@ -18,7 +20,31 @@ namespace Odyssey.Entities
 		public Vector2 Size = new(24, 32);
 		public Vector2 Direction;
 		public float MoveSpeed;
-		public string Name; // playerId
+
+		public string DisplayName { get; set; }
+
+		#region Server Auth
+
+		public string Username { get; set; }
+
+		public string Password { get; set; }
+
+		// This is a server-assigned id sent to the client upon login that the client should use for all messages
+		public Guid Id
+		{
+			get => id;
+			set
+			{
+				if (id != value)
+				{
+					Log.Debug("[Player::Id_Set] {0}", value);
+					id = value;
+				}
+			}
+		}
+		private Guid id;
+
+		#endregion
 
 		public void Update(InputUpdate input, GameTime gameTime)
 		{
@@ -54,18 +80,16 @@ namespace Odyssey.Entities
 			}
 		}
 
-		public void Draw(SpriteBatch sb, GameTime gameTime)
-		{
-			sb.Draw(GameServices.Textures["char"],
-				Position - new Vector2(Size.X / 2, Size.Y / 2),
-				new Rectangle(72, 64, (int)Size.X, (int)Size.Y),
-				Color.White);
-		}
+		public void Draw(SpriteBatch sb, GameTime gameTime) =>
+			//sb.Draw(GameServices.Textures["char"],
+			//	Position - new Vector2(Size.X / 2, Size.Y / 2),
+			//	new Rectangle(72, 64, (int)Size.X, (int)Size.Y),
+			//	Color.White);
+			sb.DrawRectangle(new RectangleF(Position.X, Position.Y, 32, 32), Color.White);
 
 		public Vector2 GetPosition() => Position;
 		public Vector2 GetSize() => Size;
 
-		public string GetName() => Name;
 		public float GetAcceleration() => MoveSpeed;
 		public void SetPosition(Vector2 pos) => Position = pos;
 
