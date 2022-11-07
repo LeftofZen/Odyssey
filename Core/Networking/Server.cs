@@ -11,6 +11,8 @@ namespace Odyssey.Networking
 		private TcpClient client;
 		private bool negotiatorRun = true;
 
+		public IList<OdysseyClient> Clients => clientList;
+
 		public OdysseyServer() => clientList = new List<OdysseyClient>();
 
 		private Task clientNegotiatorTask;
@@ -28,6 +30,8 @@ namespace Odyssey.Networking
 			return true;
 		}
 
+		public int ClientCount => clientList.Count;
+
 		public IEnumerable<(OdysseyClient, INetworkMessage)> GetReceivedMessages()
 		{
 			foreach (var client in clientList)
@@ -43,14 +47,6 @@ namespace Odyssey.Networking
 			}
 		}
 
-		public IEnumerable<IEntity> GetClients()
-		{
-			foreach (var c in clientList)
-			{
-				yield return c.ControllingEntity;
-			}
-		}
-
 		public IEnumerable<IEntity> GetConnectedEntities()
 		{
 			foreach (var c in clientList)
@@ -61,13 +57,12 @@ namespace Odyssey.Networking
 
 		public void Update(GameTime gameTime)
 		{
-			clientList = clientList.Where(c => c.TcpClient.Connected).ToList();
+			clientList = clientList.Where(c => c.Connected).ToList();
 			foreach (var c in clientList)
 			{
 				c.FlushMessages();
 			}
 		}
-
 
 		public void SendMessageToAllClients<T>(T message) where T : struct, INetworkMessage
 		{
@@ -77,7 +72,7 @@ namespace Odyssey.Networking
 			{
 				if (!c.QueueMessage(message))
 				{
-					c.StopClient();
+					c.Disconnect();
 				}
 			}
 		}
@@ -92,7 +87,7 @@ namespace Odyssey.Networking
 				{
 					if (!c.QueueMessage(message))
 					{
-						c.StopClient();
+						c.Disconnect();
 					}
 				}
 			}
@@ -122,7 +117,8 @@ namespace Odyssey.Networking
 				var client = clientNegotiator.AcceptTcpClient();
 
 				Log.Debug("[OdysseyServer::ClientLoop] Connected! {connected} {endpoint}", client.Client.Connected, client.Client.RemoteEndPoint.ToString());
-				clientList.Add(new OdysseyClient(client));
+				var oc = new OdysseyClient(client);
+				clientList.Add(oc);
 
 				Thread.Sleep(10);
 			}

@@ -72,7 +72,6 @@ namespace Odyssey.Networking.Messages
 		public uint Type => (uint)NetworkMessageType.LogoutRequest;
 		public bool RequiresLogin => true;
 		public string Username { get; init; }
-		public string Password { get; init; }
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -94,6 +93,17 @@ namespace Odyssey.Networking.Messages
 		public Guid ClientId { get; init; }
 		public bool RequiresLogin => true;
 		public string Message { get; init; }
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct KeepAliveMessage : INetworkMessage, IClientId
+	{
+		public uint Type => (uint)NetworkMessageType.KeepAlive;
+		public Guid ClientId { get; init; }
+		public bool RequiresLogin => false;
+		public long Timestamp { get; init; }
 	}
 
 }

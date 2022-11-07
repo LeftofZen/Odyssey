@@ -26,8 +26,13 @@ namespace Odyssey.Client
 				Color.Blue);
 		}
 
+
+		public static void DrawImGui() //, Map map)
+		{
+			//ImGui.ShowDemo();
+
+		}
 		/*
-		public static void DrawImGui(ImGuiRenderer imgui, GameTime gameTime, Map map)
 		{
 			// ImGUI
 			imgui.BeginLayout(gameTime);
