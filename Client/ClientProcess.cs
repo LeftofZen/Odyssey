@@ -6,11 +6,12 @@ using MonoGame.Extended.Input;
 using MonoGame.ImGui;
 using Odyssey.Entities;
 using Odyssey.Logging;
-using Odyssey.Network;
 using Odyssey.Networking;
 using Odyssey.Networking.Messages;
+using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
+using Serilog.Exceptions;
 
 namespace Odyssey.Client
 {
@@ -43,6 +44,7 @@ namespace Odyssey.Client
 			Log.Logger = new LoggerConfiguration()
 				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
 				.WriteTo.Sink(logsink)
+				.Enrich.WithExceptionDetails()
 				.MinimumLevel.Debug()
 				.CreateLogger();
 		}
@@ -53,7 +55,14 @@ namespace Odyssey.Client
 			camera = new Camera(GraphicsDevice.Viewport);
 			GuiRenderer = new ImGUIRenderer(this).Initialize().RebuildFontAtlas();
 
-			if (!client.Client.Connected)
+			player = new Player()
+			{
+				DisplayName = "Left of Zen",
+				Username = "bob",
+				Password = "foo",
+			};
+
+			if (!client.TcpClient.Connected)
 			{
 				client.Start();
 			}
@@ -94,31 +103,42 @@ namespace Odyssey.Client
 
 		private void NetworkReceive()
 		{
-			client.ReadMessages();
-			foreach (var msg in client.MessageQueue)
+			if (client?.Messages is null)
 			{
-				Log.Debug("received message {0}", msg.Type);
-				switch (msg.Type)
+				return;
+			}
+
+			while (client.Messages.TryDequeue(out var dmsg))
+			{
+				Log.Debug("[NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
+				if (dmsg.msg is LoginResponse loginResponse)
 				{
-					case NetworkMessageType.WorldUpdate:
-						/*map = ((WorldUpdate)msg).Map;*/
-						break;
-					case NetworkMessageType.PlayerUpdate:
-						/*player.SetPosition(((PlayerUpdate)msg).Position);*/
-						break;
+					// if loginResponse == successful
+					player.Id = loginResponse.ClientId;
+					client.ControllingEntity = player;
+					client.LoginMessageInFlight = false;
+					client.IsLoggedIn = true;
+					Log.Information("\"{player}\" logged in with {id}", player.DisplayName, player.Id);
 				}
 			}
+
 		}
 
 		private void NetworkSend()
 		{
+			if (!client.IsLoggedIn && !client.LoginMessageInFlight)
+			{
+				_ = client.Login(player.Username, player.Password);
+				return;
+			}
+
 			var clientInput = new InputUpdate()
 			{
 				Mouse = Mouse.GetState(),
 				Keyboard = Keyboard.GetState(),
 				Gamepad = GamePad.GetState(PlayerIndex.One),
 				InputTimeUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-				//Name = "Left of Zen",
+				ClientId = player.Id,
 			};
 
 			// this limits input sending to only when keys are pressed - not great
@@ -126,11 +146,13 @@ namespace Odyssey.Client
 			// for now its fine just to send every frame
 			if (Keyboard.GetState().GetPressedKeys().Length > 0)
 			{
-				if (!client.SendMessage(NetworkMessageType.NetworkInput, clientInput))
+				if (!client.QueueMessage(clientInput))
 				{
-					Log.Error("Couldn't send message: {0}", nameof(NetworkMessageType.NetworkInput));
+					Log.Error("Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
 				}
 			}
+
+			client.FlushMessages();
 		}
 
 		protected override void Draw(GameTime gameTime)
@@ -170,10 +192,12 @@ namespace Odyssey.Client
 				Render.DrawBoundingBox(sb, player);
 				if (camera.Zoom >= 1)
 				{
-					Odyssey.Render.String.DrawDebugStringCentered(sb, GameServices.Fonts["Calibri"], player.Name, player.Position - new Vector2(0, player.Size.Y / 2), Color.White);
+					sb.DrawDebugStringCentered(GameServices.Fonts["Calibri"], player.DisplayName, player.Position - new Vector2(0, player.Size.Y / 2), Color.White);
 				}
+
 			}
 
+			sb.DrawDebugStringCentered(GameServices.Fonts["Calibri"], client.IsLoggedIn.ToString(), new Vector2(20, 300), Color.White);
 
 
 			//DrawMap(sb, mapLookup["map1"]);

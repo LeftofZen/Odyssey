@@ -1,8 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Odyssey;
+using Serilog;
 
-namespace Core.Entities.Animal
+namespace Odyssey.Entities.Animal
 {
 	public class Animal : IEntity
 	{
@@ -15,7 +15,7 @@ namespace Core.Entities.Animal
 		public Vector2 Acceleration { get => _acceleration; set => _acceleration = value; }
 
 		public Vector2 Size = new(48, 48);
-		public string Name;
+		public string DisplayName { get; set; }
 
 		public Vector2 Direction;
 		//public Vector2 OldPosition;
@@ -24,6 +24,21 @@ namespace Core.Entities.Animal
 		public AnimalType AnimalType;
 
 		public List<IBehaviour> Behaviours = new();
+
+		// This is a server-assigned id sent to the client upon login that the client should use for all messages
+		public Guid Id
+		{
+			get => id;
+			set
+			{
+				if (id != value)
+				{
+					Log.Debug("[Player::Id_Set] {id}", value);
+					id = value;
+				}
+			}
+		}
+		private Guid id;
 
 		public void Update(GameTime gameTime)
 		{
@@ -127,12 +142,7 @@ namespace Core.Entities.Animal
 			//	1f,
 			//	SpriteEffects.None, 0f);
 		}
-		public Vector2 GetPosition() => Position;
+
 		public Vector2 GetSize() => Size;
-		public string GetName() => Name;
-
-		public float GetAcceleration() => AccelerationSpeed;
-
-		public void SetPosition(Vector2 pos) => Position = pos;
 	}
 }

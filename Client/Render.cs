@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoGame.Extended;
 
 namespace Odyssey.Client
 {
@@ -9,20 +10,19 @@ namespace Odyssey.Client
 		{
 			position.X -= position.X % alignment;
 			position.Y -= position.Y % alignment;
-			sb.Draw(
-				GameServices.Textures["ui"],
-				position,
-				new Rectangle(0, 0, tileSize, tileSize),
-				color);
+
+			//sb.Draw(
+			//	GameServices.Textures["ui"],
+			//	position,
+			//	new Rectangle(0, 0, tileSize, tileSize),
+			//	color);
 		}
 
 		public static void DrawBoundingBox(SpriteBatch sb, IEntity entity)
 		{
 			var pos = (entity.Position - (entity.GetSize() / 2)).ToPoint();
-			sb.Draw(
-				GameServices.Textures["ui"],
+			sb.DrawRectangle(
 				new Rectangle(pos.X, pos.Y, (int)entity.GetSize().X, (int)entity.GetSize().Y),
-				new Rectangle(0, 0, 32, 32),
 				Color.Blue);
 		}
 

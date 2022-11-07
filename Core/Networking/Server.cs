@@ -1,9 +1,8 @@
 ﻿using System.Net.Sockets;
 using Microsoft.Xna.Framework;
-using Odyssey.Networking;
 using Serilog;
 
-namespace Odyssey.Network
+namespace Odyssey.Networking
 {
 	public class OdysseyServer
 	{
@@ -18,8 +17,8 @@ namespace Odyssey.Network
 
 		public bool Start()
 		{
-			Log.Information("Server starting on {name} {port}", Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
-			clientNegotiator = new TcpListener(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
+			Log.Information("[OdysseyServer::Start] Server starting on {name} {port}", Constants.DefaultHostname, Constants.DefaultPort);
+			clientNegotiator = new TcpListener(Constants.DefaultHostname, Constants.DefaultPort);
 
 			// Start listening for client requests.
 
@@ -29,73 +28,107 @@ namespace Odyssey.Network
 			return true;
 		}
 
-		public IEnumerable<INetworkMessage> GetServerMessages()
+		public IEnumerable<(OdysseyClient, INetworkMessage)> GetReceivedMessages()
+		{
+			foreach (var client in clientList)
+			{
+				if (client?.Messages is not null)
+				{
+					while (client.Messages.TryDequeue(out var dmsg))
+					{
+						Log.Information("[OdysseyServer::GetServerMessages] {msgType}", dmsg.hdr.Type);
+						yield return (client, dmsg.msg);
+					}
+				}
+			}
+		}
+
+		public IEnumerable<IEntity> GetClients()
 		{
 			foreach (var c in clientList)
 			{
-				foreach (var m in c.MessageQueue)
-				{
-					yield return m;
-				}
+				yield return c.ControllingEntity;
+			}
+		}
+
+		public IEnumerable<IEntity> GetConnectedEntities()
+		{
+			foreach (var c in clientList)
+			{
+				yield return c.ControllingEntity;
 			}
 		}
 
 		public void Update(GameTime gameTime)
 		{
-			ReadMessages();
-
-			// purge closed clients
-			clientList = clientList.Where(c => c.Client.Connected).ToList();
-		}
-
-		public void SendMessageToAllClients<T>(NetworkMessageType type, T message) where T : struct, INetworkMessage
-		{
+			clientList = clientList.Where(c => c.TcpClient.Connected).ToList();
 			foreach (var c in clientList)
 			{
-				if (!c.SendMessage(type, message))
+				c.FlushMessages();
+			}
+		}
+
+
+		public void SendMessageToAllClients<T>(T message) where T : struct, INetworkMessage
+		{
+			Log.Debug("[OdysseyServer::SendMessageToAllClients]");
+
+			foreach (var c in clientList)
+			{
+				if (!c.QueueMessage(message))
 				{
 					c.StopClient();
 				}
 			}
 		}
 
-		public void SendMessageToClient<T>(string playerName, NetworkMessageType type, T message) where T : struct, INetworkMessage
+		public void SendMessageToAllClientsExcept<T>(T message, IEntity exceptedEntity) where T : struct, INetworkMessage
 		{
-			var client = clientList.SingleOrDefault(c => c.PlayerName == playerName);
-			if (client != null)
+			Log.Debug("[OdysseyServer::SendMessageToAllClientsExcept]");
+
+			foreach (var c in clientList)
 			{
-				client.SendMessage(type, message);
+				if (c.ControllingEntity != null && c.ControllingEntity.Id != exceptedEntity.Id)
+				{
+					if (!c.QueueMessage(message))
+					{
+						c.StopClient();
+					}
+				}
 			}
 		}
 
-		public void ReadMessages()
+		public void SendMessageToClient<T>(Guid id, T message) where T : struct, INetworkMessage
 		{
-			foreach (var c in clientList)
+			Log.Debug("[OdysseyServer::SendMessageToClient]");
+
+			var client = clientList.SingleOrDefault(c => c.ControllingEntity.Id == id);
+			if (client != null)
 			{
-				c.ReadMessages();
+				client.QueueMessage(message);
 			}
 		}
 
 		private void ClientLoop()
 		{
-			Log.Debug("Waiting for a connection... ");
+			Log.Debug("[OdysseyServer::ClientLoop] {negotiatorRun}", negotiatorRun);
 
 			clientNegotiator.Start();
 			while (negotiatorRun)
 			{
-				// Perform a blocking call to accept requests.
-				// You could also use server.AcceptSocket() here.
-				if (clientNegotiator.Pending())
-				{
-					clientList.Add(new OdysseyClient(clientNegotiator.AcceptTcpClient()));
-					Log.Debug("Connected!");
-				}
+				Log.Debug("[OdysseyServer::ClientLoop] Waiting for a connection... ");
 
-				Thread.Sleep(100);
+				// Perform a blocking call to accept requests.
+				var client = clientNegotiator.AcceptTcpClient();
+
+				Log.Debug("[OdysseyServer::ClientLoop] Connected! {connected} {endpoint}", client.Client.Connected, client.Client.RemoteEndPoint.ToString());
+				clientList.Add(new OdysseyClient(client));
+
+				Thread.Sleep(10);
 			}
 
 			clientNegotiator.Stop();
-			Log.Debug("Client listener stopped!");
+			Log.Debug("[OdysseyServer::ClientLoop] Client listener stopped!");
 		}
 
 		public bool Stop() => negotiatorRun = false;

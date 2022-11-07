@@ -1,38 +1,99 @@
 ﻿using System.Runtime.InteropServices;
+using MessagePack;
 using Microsoft.Xna.Framework.Input;
 
+// TODO - autogenerate this file with source generators https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/
 namespace Odyssey.Networking.Messages
 {
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
-	public struct InputUpdate : INetworkMessage
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct InputUpdate : INetworkMessage, IClientId
 	{
+		public uint Type => (uint)NetworkMessageType.InputUpdate;
+
 		public MouseState Mouse;
 		public KeyboardState Keyboard;
 		public GamePadState Gamepad;
 
 		public long InputTimeUnixMilliseconds;
 
-		//public string PlayerName;
+		public Guid ClientId { get; init; }
 
-		public NetworkMessageType Type => NetworkMessageType.NetworkInput;
+		public bool RequiresLogin => true;
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
 	public struct WorldUpdate : INetworkMessage
 	{
-		public NetworkMessageType Type => NetworkMessageType.WorldUpdate;
-
-		//public Map Map { get; set; }
+		public uint Type => (uint)NetworkMessageType.WorldUpdate;
+		public bool RequiresLogin => false;
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
-	public struct PlayerUpdate : INetworkMessage
+	public struct PlayerUpdate : INetworkMessage, IClientId
 	{
-		public NetworkMessageType Type => NetworkMessageType.PlayerUpdate;
+		public uint Type => (uint)NetworkMessageType.PlayerUpdate;
+		public Guid ClientId { get; init; }
 
 		//public Vector2 Position;
+
+		public bool RequiresLogin => false;
 	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct LoginRequest : INetworkMessage
+	{
+		public uint Type => (uint)NetworkMessageType.LoginRequest;
+		public string Username { get; init; }
+		public string Password { get; init; }
+		public bool RequiresLogin => false;
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct LoginResponse : INetworkMessage, IClientId
+	{
+		public uint Type => (uint)NetworkMessageType.LoginResponse;
+		public Guid ClientId { get; init; }
+		public bool RequiresLogin => false;
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct LogoutRequest : INetworkMessage
+	{
+		public uint Type => (uint)NetworkMessageType.LogoutRequest;
+		public bool RequiresLogin => true;
+		public string Username { get; init; }
+		public string Password { get; init; }
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct LogoutResponse : INetworkMessage, IClientId
+	{
+		public uint Type => (uint)NetworkMessageType.LogoutResponse;
+		public Guid ClientId { get; init; }
+		public bool RequiresLogin => true;
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct ChatMessage : INetworkMessage, IClientId
+	{
+		public uint Type => (uint)NetworkMessageType.ChatMessage;
+		public Guid ClientId { get; init; }
+		public bool RequiresLogin => true;
+		public string Message { get; init; }
+	}
+
 }

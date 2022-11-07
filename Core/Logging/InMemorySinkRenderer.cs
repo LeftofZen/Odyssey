@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
+using Odyssey.Render;
 using Serilog.Events;
 using Serilog.Parsing;
 
@@ -28,7 +29,7 @@ namespace Odyssey.Logging
 		public static Vector2 RenderLine(LogEvent logEvent, SpriteBatch sb, SpriteFont font, Vector2 pos)
 		{
 			var timestamp = logEvent.Timestamp.ToString();
-			Odyssey.Render.String.DrawDebugStringLeftAligned(sb, font, timestamp, pos, Color.Firebrick, 1);
+			sb.DrawDebugStringLeftAligned(font, timestamp, pos, Color.Firebrick, 1);
 			pos += font.MeasureString(timestamp).SetY(0);
 
 			foreach (var token in logEvent.MessageTemplate.Tokens)
@@ -50,7 +51,7 @@ namespace Odyssey.Logging
 		{
 			//using (_theme.Apply(output, ConsoleThemeStyle.Text, ref count))
 			//	output.Write(tt.Text);
-			Odyssey.Render.String.DrawDebugStringLeftAligned(sb, font, tt.Text, pos, Color.CornflowerBlue, 1);
+			sb.DrawDebugStringLeftAligned(font, tt.Text, pos, Color.CornflowerBlue, 1);
 
 			return font.MeasureString(tt.Text);
 		}
@@ -61,7 +62,7 @@ namespace Odyssey.Logging
 			{
 				//using (_theme.Apply(output, ConsoleThemeStyle.Invalid, ref count))
 				//	output.Write(pt.ToString());
-				Odyssey.Render.String.DrawDebugStringLeftAligned(sb, font, pt.ToString(), pos, Color.LawnGreen, 1);
+				sb.DrawDebugStringLeftAligned(font, pt.ToString(), pos, Color.LawnGreen, 1);
 				return font.MeasureString(pt.ToString());
 			}
 
@@ -71,10 +72,10 @@ namespace Odyssey.Logging
 				if (propertyValue is ScalarValue sv)
 				{
 					var s1 = $"{pt.PropertyName}=";
-					Odyssey.Render.String.DrawDebugStringLeftAligned(sb, font, s1, pos, Color.Gray, 1);
+					sb.DrawDebugStringLeftAligned(font, s1, pos, Color.Gray, 1);
 					var l1 = font.MeasureString(s1);
 
-					Odyssey.Render.String.DrawDebugStringLeftAligned(sb, font, propertyValue.ToString(), pos + l1.SetY(0), Color.Aquamarine, 1);
+					sb.DrawDebugStringLeftAligned(font, propertyValue.ToString(), pos + l1.SetY(0), Color.Aquamarine, 1);
 					var l2 = font.MeasureString(propertyValue.ToString());
 
 					return l1 + l2;
@@ -148,7 +149,7 @@ namespace Odyssey.Logging
 			{
 				var s = property.Key + "_" + property.Value;
 				var l = font.MeasureString(s);
-				Odyssey.Render.String.DrawDebugStringLeftAligned(sb, font, s, pos, Color.CornflowerBlue, 1);
+				sb.DrawDebugStringLeftAligned(font, s, pos, Color.CornflowerBlue, 1);
 				pos = new Vector2(pos.X + l.X, pos.Y);
 			}
 

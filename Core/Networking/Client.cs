@@ -1,45 +1,67 @@
-﻿using System.Collections.Concurrent;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using Odyssey.Networking;
 using Odyssey.Networking.Messages;
 using Serilog;
 
-namespace Odyssey.Network
+namespace Odyssey.Networking
 {
 	public class OdysseyClient
 	{
 		public IPAddress Address;
 		public int Port;
-		private TcpClient tcpClient;
-		public ConcurrentQueue<INetworkMessage> MessageQueue;
-		public string PlayerName;
+		public TcpClient TcpClient { get; }
+		public IEntity ControllingEntity;
+		public bool IsLoggedIn { get; set; }
+		public bool LoginMessageInFlight { get; set; }
 
-		public TcpClient Client => tcpClient;
+		private MessageStreamWriter<INetworkMessage> writer;
+		private MessageStreamReader<INetworkMessage> reader;
+
+		public Queue<(Header hdr, INetworkMessage msg)>? Messages => reader?.DelimitedMessageQueue;
 
 		public OdysseyClient(IPAddress hostname, int port)
 		{
 			Address = hostname;
 			Port = port;
-			tcpClient = new TcpClient();
-			MessageQueue = new ConcurrentQueue<INetworkMessage>();
+			TcpClient = new TcpClient();
+
+			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Address, Port);
 		}
+
 		public OdysseyClient(TcpClient client)
 		{
-			Address = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+			Address = (client.Client.RemoteEndPoint as IPEndPoint).Address;
 			Port = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
-			tcpClient = client;
-			MessageQueue = new ConcurrentQueue<INetworkMessage>();
+			TcpClient = client;
+
+			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Address, Port);
+
+			InitMessaging();
+		}
+
+		private void InitMessaging()
+		{
+			Log.Debug("[Client::InitMessaging] {connected}", TcpClient.Connected);
+			if (TcpClient.Connected)
+			{
+				readMsgs = true;
+
+				writer = new MessageStreamWriter<INetworkMessage>(TcpClient.GetStream(), new MessagePackSerialiser());
+				reader = new MessageStreamReader<INetworkMessage>(TcpClient.GetStream(), new MessagePackDeserialiser());
+
+				msgReaderTask = Task.Run(ReadMessageLoop);
+			}
 		}
 
 		public void Start()
 		{
-			Log.Information("Client connecting on {name} {port}", Address, Port);
+			Log.Information("[Client::Start] Client connecting on {name} {port}", Address, Port);
 			//tcpClient = new TcpClient();
 
 			try
 			{
-				tcpClient.Connect(new IPEndPoint(Address, Port));
+				TcpClient.Connect(new IPEndPoint(Address, Port));
+				InitMessaging();
 			}
 			catch (Exception ex)
 			{
@@ -47,89 +69,67 @@ namespace Odyssey.Network
 			}
 		}
 
-		public void StopClient() => tcpClient.Close();
+		private Task msgReaderTask;
 
-		public void ReadMessages()
+		public bool Login(string user, string pass)
 		{
-			if (!tcpClient.Connected)
+			if (LoginMessageInFlight == false)
 			{
-				return;
+				Log.Information("[Client::Login] {user} {pass}", "Bob", "Foo");
+				LoginMessageInFlight = true;
+				return QueueMessage(new LoginRequest() { Username = "Bob", Password = "Foo" });
 			}
-
-			var stream = tcpClient.GetStream();
-			//while (true)
-			{
-				if (stream.TryReadMessage<MessageHeader>(out var header))
-				{
-					Log.Debug("[ReadMessages] Info=\"Header Received\" Type={msg}", header.Type);
-
-					switch (header.Type)
-					{
-						case NetworkMessageType.NetworkInput:
-							if (stream.TryReadMessage<InputUpdate>(out var ni))
-							{
-								MessageQueue.Enqueue(ni);
-							}
-							break;
-						case NetworkMessageType.WorldUpdate:
-							if (stream.TryReadMessage<WorldUpdate>(out var wu))
-							{
-								MessageQueue.Enqueue(wu);
-							}
-							break;
-						case NetworkMessageType.PlayerUpdate:
-							if (stream.TryReadMessage<PlayerUpdate>(out var pu))
-							{
-								MessageQueue.Enqueue(pu);
-							}
-							break;
-					}
-				}
-				//Thread.Sleep(100);
-			}
-
-			Log.Debug("[ReadMessages] Length={0}", MessageQueue.Count);
+			return false;
 		}
 
-		public bool SendMessage<T>(NetworkMessageType type, T message) where T : struct, INetworkMessage
+		public void StopClient() => TcpClient.Close(); // cancel/join msgReaderTask as well
+
+		private bool readMsgs;
+
+		public void ReadMessageLoop()
 		{
-			if (tcpClient == null)
+			Log.Debug("[Client::ReadMessages] Client message loop starting {readMsgs}", readMsgs);
+			while (readMsgs)
 			{
-				return false;
-			}
-
-			if (!tcpClient.Connected)
-			{
-				Log.Error("couldn't connect to server");
-				StopClient();
-				return false;
-			}
-
-			var stream = tcpClient.GetStream();
-
-
-			if (stream.Socket.Connected)
-			{
-				var msg = Protocol.Serialise(message);
-				var messageHeader = new MessageHeader() { Type = type, Length = msg.Length };
-
-				try
+				if (!TcpClient.Connected)
 				{
-					stream.Write(Protocol.Serialise(messageHeader));
-					stream.Write(msg);
-					stream.Flush();
+					return;
 				}
-				catch (Exception se)
+
+				if (reader is null)
 				{
-					Log.Error(se.Message);
+					InitMessaging();
+
+					if (reader is null)
+					{
+						Log.Error("[Client::ReadMessages] Message reader is null");
+						return;
+					}
+				}
+
+				reader.Update();
+			}
+		}
+
+		public void FlushMessages() => writer.Update();
+
+		public bool QueueMessage<T>(T message) where T : struct, INetworkMessage
+		{
+			Log.Debug("[Client::QueueMessage] {type}", message.Type);
+
+			if (writer is null)
+			{
+				InitMessaging();
+
+				if (writer is null)
+				{
+					Log.Error("[Client::QueueMessage] Message writer is null");
 					return false;
 				}
 			}
 
+			writer.Enqueue(message);
 			return true;
-
-			//Log.Debug("SendMessage");
-			//stream.Close();
 		}
 	}
 }
