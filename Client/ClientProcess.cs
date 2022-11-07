@@ -1,9 +1,10 @@
 ﻿using System;
+using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Monogame.Imgui.Renderer;
 using MonoGame.Extended.Input;
-using MonoGame.ImGui;
 using Odyssey.Entities;
 using Odyssey.Logging;
 using Odyssey.Networking;
@@ -29,7 +30,7 @@ namespace Odyssey.Client
 		public Player player;
 
 		// rendering
-		public ImGUIRenderer GuiRenderer; //This is the ImGuiRenderer
+		private ImGuiRenderer GuiRenderer; //This is the ImGuiRenderer
 		public Camera camera;
 
 		public ClientProcess()
@@ -51,9 +52,11 @@ namespace Odyssey.Client
 
 		protected override void Initialize()
 		{
-			// ui
 			camera = new Camera(GraphicsDevice.Viewport);
-			GuiRenderer = new ImGUIRenderer(this).Initialize().RebuildFontAtlas();
+
+			// imgui
+			GuiRenderer = new ImGuiRenderer(this);
+			GuiRenderer.RebuildFontAtlas();
 
 			player = new Player()
 			{
@@ -62,17 +65,31 @@ namespace Odyssey.Client
 				Password = "foo",
 			};
 
-			if (!client.TcpClient.Connected)
-			{
-				client.Start();
-			}
+			//ConnectToServer();
 
 			base.Initialize();
 		}
 
+		public void ConnectToServer()
+		{
+			Log.Debug("[ClientProcess::ConnectToServer] {connected}", client.Connected);
+			if (!client.Connected)
+			{
+				_ = client.Connect();
+			}
+		}
+		public void DisconnectFromServer()
+		{
+			Log.Debug("[ClientProcess::DisconnectFromServer] {connected}", client.Connected);
+			if (client.Connected)
+			{
+				client.Disconnect();
+			}
+		}
+
 		protected override void LoadContent()
 		{
-			sb = new SpriteBatch(GraphicsDevice);// TODO: use this.Content to load your game content here
+			sb = new SpriteBatch(GraphicsDevice); // TODO: use this.Content to load your game content here
 			GameServices.LoadContent(Content, GraphicsDevice);
 		}
 
@@ -110,7 +127,7 @@ namespace Odyssey.Client
 
 			while (client.Messages.TryDequeue(out var dmsg))
 			{
-				Log.Debug("[NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
+				Log.Debug("[ClientProcess::NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
 				if (dmsg.msg is LoginResponse loginResponse)
 				{
 					// if loginResponse == successful
@@ -118,19 +135,47 @@ namespace Odyssey.Client
 					client.ControllingEntity = player;
 					client.LoginMessageInFlight = false;
 					client.IsLoggedIn = true;
-					Log.Information("\"{player}\" logged in with {id}", player.DisplayName, player.Id);
+					Log.Information("[ClientProcess::NetworkReceive] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
+				}
+
+				if (dmsg.msg is LogoutResponse logoutResponse)
+				{
+					// if loginResponse == successful
+					var oldId = player.Id;
+					player.Id = Guid.Empty;
+					client.ControllingEntity = null;
+					client.LogoutMessageInFlight = false;
+					client.IsLoggedIn = false;
+					Log.Information("[ClientProcess::NetworkReceive] \"{player}\" logged out with {id}", player.DisplayName, oldId);
 				}
 			}
 
 		}
 
-		private void NetworkSend()
+		public void Login()
 		{
 			if (!client.IsLoggedIn && !client.LoginMessageInFlight)
 			{
 				_ = client.Login(player.Username, player.Password);
+			}
+		}
+
+		public void Logout()
+		{
+			if (client.IsLoggedIn && !client.LoginMessageInFlight)
+			{
+				_ = client.Logout(player.Username);
+			}
+		}
+
+		private void NetworkSend()
+		{
+			if (!client.Connected)
+			{
 				return;
 			}
+
+			//Login();
 
 			var clientInput = new InputUpdate()
 			{
@@ -148,7 +193,7 @@ namespace Odyssey.Client
 			{
 				if (!client.QueueMessage(clientInput))
 				{
-					Log.Error("Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
+					Log.Error("[ClientProcess::NetworkSend] Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
 				}
 			}
 
@@ -237,9 +282,36 @@ namespace Odyssey.Client
 
 			sb.End();
 
-			//Render.DrawImGui(GuiRenderer, gameTime);
+			GuiRenderer.BeforeLayout(this, gameTime);
+			RenderImGui();
+			GuiRenderer.AfterLayout();
 
 			base.Draw(gameTime);
+		}
+		public void RenderImGui()
+		{
+			ImGui.BulletText(client.ConnectionDetails);
+
+			if (ImGui.Button("Connect"))
+			{
+				ConnectToServer();
+			}
+			if (ImGui.Button("Disconnect"))
+			{
+				DisconnectFromServer();
+			}
+
+			if (client.Connected)
+			{
+				if (ImGui.Button("Login"))
+				{
+					Login();
+				}
+				if (ImGui.Button("Logout"))
+				{
+					Logout();
+				}
+			}
 		}
 	}
 }

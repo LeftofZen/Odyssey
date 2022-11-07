@@ -1,6 +1,4 @@
-﻿using Odyssey.Networking.Messages;
-
-namespace Odyssey.Networking
+﻿namespace Odyssey.Networking
 {
 	public enum NetworkMessageType
 	{
@@ -19,6 +17,7 @@ namespace Odyssey.Networking
 
 		#region TwoWay
 		ChatMessage,
+		KeepAlive,
 		#endregion
 	}
 

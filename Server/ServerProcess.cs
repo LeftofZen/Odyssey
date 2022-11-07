@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Linq;
+using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using MonoGame.Extended.Input;
 using Odyssey.Entities;
+//using Odyssey.ImGui;
 using Odyssey.Logging;
 using Odyssey.Networking;
 using Odyssey.Networking.Messages;
@@ -37,6 +39,10 @@ namespace Odyssey.Server
 		private NoiseParams NoiseSettings { get; } = new NoiseParams();
 		private NoiseParams PreviousNoiseSettings { get; set; } = new NoiseParams();
 
+		#endregion
+
+		#region
+		private Monogame.Imgui.Renderer.ImGuiRenderer GuiRenderer; //This is the ImGuiRenderer
 		#endregion
 
 		public Vector2 clientMousePos = Vector2.Zero;
@@ -73,6 +79,10 @@ namespace Odyssey.Server
 
 		protected override void Initialize()
 		{
+			// imgui
+			GuiRenderer = new Monogame.Imgui.Renderer.ImGuiRenderer(this);
+			GuiRenderer.RebuildFontAtlas();
+
 			// world
 			NoiseSettings.NoiseSize = 32;
 			gameState.Map = new Map(initialMapWidth, initialMapHeight, NoiseHelpers.CreateNoise2D(NoiseSettings))
@@ -157,6 +167,7 @@ namespace Odyssey.Server
 					// for now we'll just always force-make a new player
 					var uid = Guid.NewGuid();
 					client.ControllingEntity = new Player() { Username = loginMsg.Username, Password = loginMsg.Password, Id = uid };
+					client.IsLoggedIn = true;
 
 					Log.Information("[NetworkReceive] Player logged in: {user}", loginMsg.Username);
 
@@ -166,6 +177,7 @@ namespace Odyssey.Server
 				if (msg is LogoutRequest logoutMsg)
 				{
 					Log.Information("[NetworkReceive] Player logged out: {pass}", logoutMsg.Username);
+					client.IsLoggedIn = false;
 				}
 			}
 		}
@@ -197,7 +209,20 @@ namespace Odyssey.Server
 
 			sb.End();
 
+			GuiRenderer.BeforeLayout(this, gameTime);
+			RenderImGui();
+			GuiRenderer.AfterLayout();
+
 			base.Draw(gameTime);
+		}
+
+		public void RenderImGui()
+		{
+			ImGui.Text($"Clients={server.ClientCount}");
+			foreach (var c in server.Clients)
+			{
+				ImGui.BulletText(c.ConnectionDetails);
+			}
 		}
 	}
 

@@ -7,65 +7,72 @@ namespace Odyssey.Networking
 {
 	public class OdysseyClient
 	{
-		public IPAddress Address;
-		public int Port;
-		public TcpClient TcpClient { get; }
-		public IEntity ControllingEntity;
+		private TcpClient tcpClient;
+
+		public IPEndPoint Endpoint { get; init; }
+
+		public IEntity? ControllingEntity;
+		private MessageStreamWriter<INetworkMessage>? writer;
+		private MessageStreamReader<INetworkMessage>? reader;
+
 		public bool IsLoggedIn { get; set; }
 		public bool LoginMessageInFlight { get; set; }
+		public bool LogoutMessageInFlight { get; set; }
 
-		private MessageStreamWriter<INetworkMessage> writer;
-		private MessageStreamReader<INetworkMessage> reader;
+		// manual connection verification 
+		private bool _connected = false;
+		public bool Connected => tcpClient != null && tcpClient.Connected && _connected;
 
 		public Queue<(Header hdr, INetworkMessage msg)>? Messages => reader?.DelimitedMessageQueue;
 
-		public OdysseyClient(IPAddress hostname, int port)
-		{
-			Address = hostname;
-			Port = port;
-			TcpClient = new TcpClient();
+		public string ConnectionDetails => $"[{Endpoint.Address}:{Endpoint.Port}] Connected={Connected} LoggedIn={IsLoggedIn}";
 
-			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Address, Port);
+		public OdysseyClient(IPAddress address, int port)
+		{
+			Endpoint = new IPEndPoint(address, port);
+			tcpClient = new TcpClient();
+			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Endpoint.Address, Endpoint.Port);
 		}
 
 		public OdysseyClient(TcpClient client)
 		{
-			Address = (client.Client.RemoteEndPoint as IPEndPoint).Address;
-			Port = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
-			TcpClient = client;
-
-			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Address, Port);
-
-			InitMessaging();
+			Endpoint = client.Client.RemoteEndPoint as IPEndPoint;
+			tcpClient = client;
+			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Endpoint.Address, Endpoint.Port);
 		}
 
 		private void InitMessaging()
 		{
-			Log.Debug("[Client::InitMessaging] {connected}", TcpClient.Connected);
-			if (TcpClient.Connected)
+			Log.Debug("[Client::InitMessaging] {connected}", tcpClient.Connected);
+			if (tcpClient.Connected)
 			{
 				readMsgs = true;
 
-				writer = new MessageStreamWriter<INetworkMessage>(TcpClient.GetStream(), new MessagePackSerialiser());
-				reader = new MessageStreamReader<INetworkMessage>(TcpClient.GetStream(), new MessagePackDeserialiser());
+				writer = new MessageStreamWriter<INetworkMessage>(tcpClient.GetStream(), new MessagePackSerialiser());
+				reader = new MessageStreamReader<INetworkMessage>(tcpClient.GetStream(), new MessagePackDeserialiser());
 
 				msgReaderTask = Task.Run(ReadMessageLoop);
 			}
 		}
 
-		public void Start()
+		public bool Connect()
 		{
-			Log.Information("[Client::Start] Client connecting on {name} {port}", Address, Port);
+			Log.Information("[Client::Start] Client connecting on {endpoint}", Endpoint);
 			//tcpClient = new TcpClient();
 
 			try
 			{
-				TcpClient.Connect(new IPEndPoint(Address, Port));
-				InitMessaging();
+				if (!tcpClient.Connected)
+				{
+					tcpClient.Connect(Endpoint);
+					InitMessaging();
+				}
+				return true;
 			}
 			catch (Exception ex)
 			{
 				Log.Error("Ex={0}", ex);
+				return false;
 			}
 		}
 
@@ -73,16 +80,31 @@ namespace Odyssey.Networking
 
 		public bool Login(string user, string pass)
 		{
-			if (LoginMessageInFlight == false)
+			if (!LoginMessageInFlight)
 			{
-				Log.Information("[Client::Login] {user} {pass}", "Bob", "Foo");
+				Log.Information("[Client::Login] {user} {pass}", user, pass);
 				LoginMessageInFlight = true;
-				return QueueMessage(new LoginRequest() { Username = "Bob", Password = "Foo" });
+				return QueueMessage(new LoginRequest() { Username = user, Password = pass });
 			}
 			return false;
 		}
 
-		public void StopClient() => TcpClient.Close(); // cancel/join msgReaderTask as well
+		public bool Logout(string user)
+		{
+			if (!LogoutMessageInFlight)
+			{
+				Log.Information("[Client::Logout] {user}", user);
+				LogoutMessageInFlight = true;
+				return QueueMessage(new LogoutRequest() { Username = user });
+			}
+			return false;
+		}
+
+		public void Disconnect()
+		{
+			tcpClient.Close(); // cancel/join msgReaderTask as well
+			tcpClient.Dispose();
+		}
 
 		private bool readMsgs;
 
@@ -91,8 +113,9 @@ namespace Odyssey.Networking
 			Log.Debug("[Client::ReadMessages] Client message loop starting {readMsgs}", readMsgs);
 			while (readMsgs)
 			{
-				if (!TcpClient.Connected)
+				if (!tcpClient.Connected)
 				{
+					Log.Information("[Client::ReadMessages] Client disconnected from server. Aborting message loop");
 					return;
 				}
 
@@ -111,7 +134,27 @@ namespace Odyssey.Networking
 			}
 		}
 
-		public void FlushMessages() => writer.Update();
+		// this will ALWAYS send AT LEAST ONE message. it'll either be whatever the consumer wants to send, or a keep-alive message
+		public void FlushMessages()
+		{
+			try
+			{
+				if (writer.PendingMessages == 0)
+				{
+					writer.Enqueue(new KeepAliveMessage() { ClientId = ControllingEntity?.Id ?? Guid.Empty, Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds() });
+				}
+
+				writer.Update();
+
+				// if we were able to send a message, we are now connected as far as tcp is concerned
+				_connected = true;
+			}
+			catch (Exception)
+			{
+				tcpClient.Close();
+				_connected = false;
+			}
+		}
 
 		public bool QueueMessage<T>(T message) where T : struct, INetworkMessage
 		{
