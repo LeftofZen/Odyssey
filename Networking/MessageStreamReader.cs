@@ -2,18 +2,31 @@
 
 namespace Odyssey.Networking
 {
-	public interface IMessageStreamDeserialiser<T>
+	public interface IMessageStreamDeserialiser<T> where T : INetworkMessage
 	{
 		T Deserialise(Header hdr, byte[] bytes);
 	}
 
-	public class ByteDeserialiser : IMessageStreamDeserialiser<byte[]>
+	public class MessageStreamReader<T> : MessageStreamReaderBase where T : INetworkMessage
 	{
-		public byte[] Deserialise(Header hdr, byte[] bytes)
-			=> bytes;
+		private IMessageStreamDeserialiser<T> deserialiser;
+
+		public bool TryDequeue(out (Header hdr, T msg) dmsg)
+		{
+			if (DelimitedMessageQueue.TryDequeue(out var bmsg))
+			{
+				dmsg = (bmsg.hdr, deserialiser.Deserialise(bmsg.hdr, bmsg.msg));
+				return true;
+			}
+
+			dmsg = default;
+			return false;
+		}
+
+		public MessageStreamReader(Stream stream, IMessageStreamDeserialiser<T> deserialiser, int maxMsgSize = 1024) : base(stream, maxMsgSize) => this.deserialiser = deserialiser;
 	}
 
-	public class MessageStreamReader<T>
+	public class MessageStreamReaderBase
 	{
 		private readonly BufferedStream bs;
 
@@ -24,18 +37,15 @@ namespace Odyssey.Networking
 		public int MaxMsgSize { get; init; }
 		public const int DefaultMaxMsgSize = 1024;
 		public const int HeaderSize = 8;
-		public Queue<(Header hdr, T msg)> DelimitedMessageQueue { get; init; } = new();
+		public Queue<(Header hdr, byte[] msg)> DelimitedMessageQueue { get; init; } = new();
 
 		private int DataAvailable => ptrEnd - ptrStart;
 
-		private IMessageStreamDeserialiser<T> deserialiser;
-
-		public MessageStreamReader(Stream stream, IMessageStreamDeserialiser<T> deserialiser, int maxMsgSize = DefaultMaxMsgSize)
+		public MessageStreamReaderBase(Stream stream, int maxMsgSize = DefaultMaxMsgSize)
 		{
 			MaxMsgSize = maxMsgSize;
 			bs = new BufferedStream(stream, MaxMsgSize);
 			cbuf = new byte[MaxMsgSize];
-			this.deserialiser = deserialiser;
 		}
 
 		public void Update()
@@ -71,7 +81,7 @@ namespace Odyssey.Networking
 
 					// external deserialisation
 					var hdr = new Header() { Type = type, Length = length };
-					DelimitedMessageQueue.Enqueue((hdr, deserialiser.Deserialise(hdr, msgBytes.ToArray())));
+					DelimitedMessageQueue.Enqueue((hdr, msgBytes.ToArray()));
 
 					ptrStart += HeaderSize + (int)length;
 				}

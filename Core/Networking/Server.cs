@@ -36,13 +36,10 @@ namespace Odyssey.Networking
 		{
 			foreach (var client in clientList)
 			{
-				if (client?.Messages is not null)
+				while (client.TryDequeueMessage(out var dmsg))
 				{
-					while (client.Messages.TryDequeue(out var dmsg))
-					{
-						Log.Information("[OdysseyServer::GetServerMessages] {msgType}", dmsg.hdr.Type);
-						yield return (client, dmsg.msg);
-					}
+					Log.Information("[OdysseyServer::GetServerMessages] {msgType}", dmsg.hdr.Type);
+					yield return (client, dmsg.msg);
 				}
 			}
 		}

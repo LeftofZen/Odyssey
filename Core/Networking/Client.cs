@@ -23,7 +23,17 @@ namespace Odyssey.Networking
 		private bool _connected = false;
 		public bool Connected => tcpClient != null && tcpClient.Connected && _connected;
 
-		public Queue<(Header hdr, INetworkMessage msg)>? Messages => reader?.DelimitedMessageQueue;
+		//public Queue<(Header hdr, INetworkMessage msg)>? Messages => reader?.DelimitedMessageQueue;
+		public bool TryDequeueMessage(out (Header hdr, INetworkMessage msg) msg)
+		{
+			if (reader != null && reader.TryDequeue(out msg))
+			{
+				return true;
+			}
+
+			msg = default;
+			return false;
+		}
 
 		public string ConnectionDetails => $"[{Endpoint.Address}:{Endpoint.Port}] Connected={Connected} LoggedIn={IsLoggedIn}";
 

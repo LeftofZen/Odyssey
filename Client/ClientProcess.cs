@@ -120,12 +120,7 @@ namespace Odyssey.Client
 
 		private void NetworkReceive()
 		{
-			if (client?.Messages is null)
-			{
-				return;
-			}
-
-			while (client.Messages.TryDequeue(out var dmsg))
+			while (client.TryDequeueMessage(out var dmsg))
 			{
 				Log.Debug("[ClientProcess::NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
 				if (dmsg.msg is LoginResponse loginResponse)

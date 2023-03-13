@@ -69,7 +69,7 @@ namespace NetworkTesting
 			reader.Update();
 
 			// assert
-			var dmsg = reader.DelimitedMessageQueue.Peek();
+			Assert.True(reader.TryDequeue(out var dmsg));
 
 			Assert.Multiple(() =>
 			{
