@@ -67,7 +67,7 @@ namespace Odyssey.Networking
 
 		public bool Connect()
 		{
-			Log.Information("[Client::Start] Client connecting on {endpoint}", Endpoint);
+			Log.Information("[Client::Connect] Client connecting on {endpoint}", Endpoint);
 			//tcpClient = new TcpClient();
 
 			try

@@ -28,6 +28,10 @@ namespace Odyssey.Logging
 
 		public static Vector2 RenderLine(LogEvent logEvent, SpriteBatch sb, SpriteFont font, Vector2 pos)
 		{
+			if (font is null)
+			{
+				return Vector2.Zero;
+			}
 			var timestamp = logEvent.Timestamp.ToString();
 			sb.DrawDebugStringLeftAligned(font, timestamp, pos, Color.Firebrick, 1);
 			pos += font.MeasureString(timestamp).SetY(0);
