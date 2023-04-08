@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using Microsoft.Xna.Framework;
+using Odyssey.ECS;
 using Serilog;
 
 namespace Odyssey.Networking

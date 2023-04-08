@@ -33,11 +33,12 @@ namespace Odyssey.Graph
 			Edges.Remove(edge2);
 		}
 
-		public LinkedList<INode>ShortestPath(INode a, INode b)
+		public LinkedList<INode> ShortestPath(INode a, INode b)
 		{
 			var path = new LinkedList<INode>();
 			path.AddLast(a);
 			path.AddLast(b);
+			return path;
 		}
 	}
 }

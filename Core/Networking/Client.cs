@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using Odyssey.ECS;
 using Odyssey.Networking.Messages;
 using Serilog;
 

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Odyssey.ECS;
 using Serilog;
 
 namespace Odyssey.Entities.Animal
@@ -144,5 +145,7 @@ namespace Odyssey.Entities.Animal
 		}
 
 		public Vector2 GetSize() => Size;
+
+		public ICollection<IComponent> Components => throw new NotImplementedException();
 	}
 }

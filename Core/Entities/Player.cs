@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
+using Odyssey.ECS;
 using Odyssey.Networking.Messages;
 using Serilog;
 
@@ -101,5 +102,7 @@ namespace Odyssey.Entities
 			Acceleration = Vector2.Zero; // arresting
 			Velocity *= 0.95f; // damping
 		}
+
+		public ICollection<IComponent> Components => throw new NotImplementedException();
 	}
 }
