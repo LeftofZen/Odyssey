@@ -75,8 +75,8 @@ namespace NetworkTesting
 			{
 				Assert.That(dmsg.hdr.Type, Is.EqualTo((uint)NetworkMessageType.ChatMessage));
 				Assert.That(dmsg.hdr.Length, Is.EqualTo(68));
-				Assert.AreEqual(msg.ClientId, ((ChatMessage)dmsg.msg).ClientId);
-				Assert.AreEqual(msg.Message, ((ChatMessage)dmsg.msg).Message);
+				Assert.That(((ChatMessage)dmsg.msg).ClientId, Is.EqualTo(msg.ClientId));
+				Assert.That(((ChatMessage)dmsg.msg).Message, Is.EqualTo(msg.Message));
 			});
 		}
 

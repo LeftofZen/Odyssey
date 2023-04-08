@@ -98,6 +98,16 @@ namespace Odyssey.Networking.Messages
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
 	[MessagePackObject(keyAsPropertyName: true)]
+	public struct BroadcastMessage : INetworkMessage
+	{
+		public uint Type => (uint)NetworkMessageType.Broadcast;
+		public bool RequiresLogin => false;
+		public string Message { get; init; }
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
 	public struct KeepAliveMessage : INetworkMessage, IClientId
 	{
 		public uint Type => (uint)NetworkMessageType.KeepAlive;

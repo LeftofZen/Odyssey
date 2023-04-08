@@ -53,7 +53,7 @@ namespace Odyssey.Networking
 			}
 		}
 
-		public void Update(GameTime gameTime)
+		public void Update(GameTime? gameTime)
 		{
 			clientList = clientList.Where(c => c.Connected).ToList();
 			foreach (var c in clientList)
@@ -61,6 +61,9 @@ namespace Odyssey.Networking
 				c.FlushMessages();
 			}
 		}
+
+		public void Update()
+			=> Update(null);
 
 		public void SendMessageToAllClients<T>(T message) where T : struct, INetworkMessage
 		{

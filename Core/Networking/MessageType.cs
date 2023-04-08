@@ -7,6 +7,7 @@
 		LogoutResponse,
 		WorldUpdate,
 		PlayerUpdate,
+		Broadcast,
 		#endregion
 
 		#region Client-Specific

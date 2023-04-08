@@ -22,7 +22,8 @@ namespace Odyssey.Networking
 
 		// manual connection verification 
 		private bool _connected = false;
-		public bool Connected => tcpClient != null && tcpClient.Connected && _connected;
+		public bool Connected
+			=> tcpClient != null && tcpClient.Connected; // && _connected;
 
 		//public Queue<(Header hdr, INetworkMessage msg)>? Messages => reader?.DelimitedMessageQueue;
 		public bool TryDequeueMessage(out (Header hdr, INetworkMessage msg) msg)
@@ -64,18 +65,26 @@ namespace Odyssey.Networking
 
 				msgReaderTask = Task.Run(ReadMessageLoop);
 			}
+			else
+			{
+				throw new InvalidOperationException("cannot init messaging if client isn't connected");
+			}
 		}
 
-		public bool Connect()
+		public async Task<bool> ConnectAsync()
 		{
 			Log.Information("[Client::Connect] Client connecting on {endpoint}", Endpoint);
-			//tcpClient = new TcpClient();
 
 			try
 			{
 				if (!tcpClient.Connected)
 				{
-					tcpClient.Connect(Endpoint);
+					await tcpClient.ConnectAsync(Endpoint);
+					if (!tcpClient.Connected)
+					{
+						throw new InvalidOperationException("client couldn't connect");
+					}
+
 					InitMessaging();
 				}
 				return true;
@@ -86,6 +95,9 @@ namespace Odyssey.Networking
 				return false;
 			}
 		}
+
+		public bool Connect()
+			=> ConnectAsync().Result;
 
 		private Task msgReaderTask;
 
@@ -119,7 +131,7 @@ namespace Odyssey.Networking
 
 		private bool readMsgs;
 
-		public void ReadMessageLoop()
+		void ReadMessageLoop()
 		{
 			Log.Debug("[Client::ReadMessages] Client message loop starting {readMsgs}", readMsgs);
 			while (readMsgs)

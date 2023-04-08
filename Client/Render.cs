@@ -31,8 +31,8 @@ namespace Odyssey.Client
 		public static void DrawImGui() //, Map map)
 		{
 			//ImGui.ShowDemo();
-
 		}
+
 		/*
 		{
 			// ImGUI

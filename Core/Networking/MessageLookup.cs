@@ -14,6 +14,7 @@ namespace Odyssey.Networking
 			{ NetworkMessageType.PlayerUpdate, typeof(PlayerUpdate) },
 			{ NetworkMessageType.WorldUpdate, typeof(WorldUpdate) },
 			{ NetworkMessageType.ChatMessage, typeof(ChatMessage) },
+			{ NetworkMessageType.Broadcast, typeof(BroadcastMessage) },
 		};
 
 		public static Dictionary<Type, NetworkMessageType> ToNetwork = new()
@@ -26,6 +27,7 @@ namespace Odyssey.Networking
 			{ typeof(PlayerUpdate), NetworkMessageType.PlayerUpdate },
 			{ typeof(WorldUpdate), NetworkMessageType.WorldUpdate },
 			{ typeof(ChatMessage), NetworkMessageType.ChatMessage },
+			{ typeof(BroadcastMessage), NetworkMessageType.Broadcast },
 		};
 	}
 
