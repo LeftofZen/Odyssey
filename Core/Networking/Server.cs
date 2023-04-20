@@ -21,6 +21,11 @@ namespace Odyssey.Networking
 			clientList = new List<OdysseyClient>();
 			Logger = logger;
 		}
+		public OdysseyServer()
+		{
+			clientList = new List<OdysseyClient>();
+			Logger = Log.Logger;
+		}
 
 		private Task clientNegotiatorTask;
 
