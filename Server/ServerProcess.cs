@@ -27,6 +27,7 @@ namespace Odyssey.Server
 		private SpriteBatch sb;
 		private OdysseyServer server;
 
+		ILogger Logger;
 		private InMemorySink logsink;
 		private bool renderLog = true;
 
@@ -50,15 +51,12 @@ namespace Odyssey.Server
 
 		public ServerProcess()
 		{
-			logsink = new InMemorySink();
-			Log.Logger = new LoggerConfiguration()
-				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
-				.WriteTo.Sink(logsink)
-				.Enrich.WithExceptionDetails()
-				.MinimumLevel.Debug()
-				.CreateLogger();
+			ClearLogs();
 
 			graphics = new GraphicsDeviceManager(this);
+			graphics.PreferredBackBufferWidth = 1920;
+			graphics.PreferredBackBufferHeight = 1080;
+
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;
 			Window.AllowUserResizing = true;
@@ -69,9 +67,22 @@ namespace Odyssey.Server
 				Entities = new()
 			};
 
-			server = new OdysseyServer();
+			server = new OdysseyServer(Logger);
 
 		}
+		void ClearLogs()
+		{
+			logsink = new InMemorySink();
+			Logger = new LoggerConfiguration()
+				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
+				.WriteTo.Sink(logsink)
+				.Enrich.WithExceptionDetails()
+				.MinimumLevel.Debug()
+				.CreateLogger();
+
+			Log.Logger = Logger;
+		}
+
 		protected override void OnExiting(object sender, EventArgs args)
 		{
 			_ = server.Stop();
@@ -135,7 +146,7 @@ namespace Odyssey.Server
 			// foreach client, send the player info to each other client
 			foreach (var e in gameState.Entities)
 			{
-				server.SendMessageToAllClientsExcept(new PlayerUpdate() { /*Position = player.Position*/ }, e);
+				//server.SendMessageToAllClientsExcept(new PlayerUpdate() { /*Position = player.Position*/ }, e);
 			}
 		}
 
@@ -146,7 +157,7 @@ namespace Odyssey.Server
 			{
 				if (msg is InputUpdate networkMsg)
 				{
-					Log.Debug("[NetworkInput Message] {time} {x} {y}", networkMsg.InputTimeUnixMilliseconds, networkMsg.Mouse.X, networkMsg.Mouse.Y);
+					Logger.Debug("[NetworkInput Message] {time} {x} {y}", networkMsg.InputTimeUnixMilliseconds, networkMsg.Mouse.X, networkMsg.Mouse.Y);
 					clientMousePos = new Vector2(networkMsg.Mouse.X, networkMsg.Mouse.Y);
 					// input handling above, everything else below
 					var entity = gameState.Entities.Where(e => e.Id == networkMsg.ClientId).Single();
@@ -159,7 +170,7 @@ namespace Odyssey.Server
 					{
 						//server.SendMessageToClient()
 						// user already logged in
-						Log.Warning("[NetworkReceive] Player already logged in: {user}", loginMsg.Username);
+						Logger.Warning("[NetworkReceive] Player already logged in: {user}", loginMsg.Username);
 						break;
 					}
 
@@ -170,15 +181,20 @@ namespace Odyssey.Server
 					client.ControllingEntity = new Player() { Username = loginMsg.Username, Password = loginMsg.Password, Id = uid };
 					client.IsLoggedIn = true;
 
-					Log.Information("[NetworkReceive] Player logged in: {user}", loginMsg.Username);
+					Logger.Information("[NetworkReceive] Player logged in: {user}", loginMsg.Username);
 
 					_ = client.QueueMessage(new LoginResponse() { ClientId = uid });
 				}
 
 				if (msg is LogoutRequest logoutMsg)
 				{
-					Log.Information("[NetworkReceive] Player logged out: {pass}", logoutMsg.Username);
+					Logger.Information("[NetworkReceive] Player logged out: {user}", logoutMsg.Username);
 					client.IsLoggedIn = false;
+				}
+
+				if (msg is KeepAliveMessage keepAliveMsg)
+				{
+					Logger.Debug("[NetworkReceive] [KeepAlive] ClientId={clientId}", keepAliveMsg.ClientId);
 				}
 			}
 		}

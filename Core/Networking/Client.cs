@@ -157,11 +157,18 @@ namespace Odyssey.Networking
 			}
 		}
 
+		public int PendingMessages => writer?.PendingMessages ?? 0;
+
 		// this will ALWAYS send AT LEAST ONE message. it'll either be whatever the consumer wants to send, or a keep-alive message
 		public void FlushMessages()
 		{
 			try
 			{
+				if (writer is null)
+				{
+					return;
+				}
+
 				if (writer.PendingMessages == 0)
 				{
 					writer.Enqueue(new KeepAliveMessage() { ClientId = ControllingEntity?.Id ?? Guid.Empty, Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds() });
@@ -181,7 +188,7 @@ namespace Odyssey.Networking
 
 		public bool QueueMessage<T>(T message) where T : struct, INetworkMessage
 		{
-			Log.Debug("[Client::QueueMessage] {type}", message.Type);
+			Log.Debug("[Client::QueueMessage] {type} {ctype}", message.Type, message.GetType());
 
 			if (writer is null)
 			{

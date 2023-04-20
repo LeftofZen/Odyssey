@@ -36,8 +36,8 @@ namespace Odyssey
 			var fontNames = new List<string> { "Calibri" };
 			foreach (var v in fontNames)
 			{
-				//Fonts.Add(v, Content.Load<SpriteFont>("fonts\\" + v));
-				Fonts.Add(v, null);
+				Fonts.Add(v, Content.Load<SpriteFont>("fonts\\" + v));
+				//Fonts.Add(v, null);
 			}
 
 			//var songNames = new List<string> { "farm_music" };

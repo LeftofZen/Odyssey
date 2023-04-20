@@ -21,7 +21,9 @@ namespace Odyssey.Client
 		private GraphicsDeviceManager graphics;
 		private SpriteBatch sb;
 		private OdysseyClient client;
+		private Guid Id;
 
+		private ILogger Logger;
 		private InMemorySink logsink;
 		private bool renderLog = true;
 
@@ -35,19 +37,32 @@ namespace Odyssey.Client
 
 		public ClientProcess()
 		{
+			Id = Guid.NewGuid();
+			ClearLogs();
+
 			graphics = new GraphicsDeviceManager(this);
+			graphics.PreferredBackBufferWidth = 1920;
+			graphics.PreferredBackBufferHeight = 1080;
+
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;
+			Window.AllowUserResizing = true;
+			Window.Title = "Odyssey (client)";
 
 			client = new OdysseyClient(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
+		}
 
+		void ClearLogs()
+		{
 			logsink = new InMemorySink();
-			Log.Logger = new LoggerConfiguration()
+			Logger = new LoggerConfiguration()
 				//.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}") // https://github.com/serilog/serilog/wiki/Formatting-Output
 				.WriteTo.Sink(logsink)
 				.Enrich.WithExceptionDetails()
 				.MinimumLevel.Debug()
 				.CreateLogger();
+
+			Log.Logger = Logger;
 		}
 
 		protected override void Initialize()
@@ -65,6 +80,7 @@ namespace Odyssey.Client
 				Password = "foo",
 			};
 
+			// click button on imgui
 			//ConnectToServer();
 
 			base.Initialize();
@@ -72,7 +88,7 @@ namespace Odyssey.Client
 
 		public void ConnectToServer()
 		{
-			Log.Debug("[ClientProcess::ConnectToServer] {connected}", client.Connected);
+			Logger.Debug("[ClientProcess::ConnectToServer] {connected}", client.Connected);
 			if (!client.Connected)
 			{
 				_ = client.Connect();
@@ -80,7 +96,7 @@ namespace Odyssey.Client
 		}
 		public void DisconnectFromServer()
 		{
-			Log.Debug("[ClientProcess::DisconnectFromServer] {connected}", client.Connected);
+			Logger.Debug("[ClientProcess::DisconnectFromServer] {connected}", client.Connected);
 			if (client.Connected)
 			{
 				client.Disconnect();
@@ -122,7 +138,7 @@ namespace Odyssey.Client
 		{
 			while (client.TryDequeueMessage(out var dmsg))
 			{
-				Log.Debug("[ClientProcess::NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
+				Logger.Debug("[ClientProcess::NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
 				if (dmsg.msg is LoginResponse loginResponse)
 				{
 					// if loginResponse == successful
@@ -130,7 +146,7 @@ namespace Odyssey.Client
 					client.ControllingEntity = player;
 					client.LoginMessageInFlight = false;
 					client.IsLoggedIn = true;
-					Log.Information("[ClientProcess::NetworkReceive] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
+					Logger.Information("[ClientProcess::NetworkReceive] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
 				}
 
 				if (dmsg.msg is LogoutResponse logoutResponse)
@@ -141,7 +157,7 @@ namespace Odyssey.Client
 					client.ControllingEntity = null;
 					client.LogoutMessageInFlight = false;
 					client.IsLoggedIn = false;
-					Log.Information("[ClientProcess::NetworkReceive] \"{player}\" logged out with {id}", player.DisplayName, oldId);
+					Logger.Information("[ClientProcess::NetworkReceive] \"{player}\" logged out with {id}", player.DisplayName, oldId);
 				}
 			}
 
@@ -188,8 +204,14 @@ namespace Odyssey.Client
 			{
 				if (!client.QueueMessage(clientInput))
 				{
-					Log.Error("[ClientProcess::NetworkSend] Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
+					Logger.Error("[ClientProcess::NetworkSend] Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
 				}
+			}
+
+			if (client.PendingMessages == 0)
+			{
+				Logger.Debug("[ClientProcess::NetworkSend] No pending messages, will send keepalive instead");
+				_ = client.QueueMessage(new KeepAliveMessage() { ClientId = Id, Timestamp = DateTime.Now.Ticks });
 			}
 
 			client.FlushMessages();
@@ -294,6 +316,10 @@ namespace Odyssey.Client
 			if (ImGui.Button("Disconnect"))
 			{
 				DisconnectFromServer();
+			}
+			if (ImGui.Button("Clear Logs"))
+			{
+				ClearLogs();
 			}
 
 			if (client.Connected)

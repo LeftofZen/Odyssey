@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using Microsoft.Xna.Framework;
 using Odyssey.ECS;
+using Odyssey.Logging;
 using Serilog;
 
 namespace Odyssey.Networking
@@ -13,14 +14,19 @@ namespace Odyssey.Networking
 		private bool negotiatorRun = true;
 
 		public IList<OdysseyClient> Clients => clientList;
+		ILogger Logger;
 
-		public OdysseyServer() => clientList = new List<OdysseyClient>();
+		public OdysseyServer(ILogger logger)
+		{
+			clientList = new List<OdysseyClient>();
+			Logger = logger;
+		}
 
 		private Task clientNegotiatorTask;
 
 		public bool Start()
 		{
-			Log.Information("[OdysseyServer::Start] Server starting on {name} {port}", Constants.DefaultHostname, Constants.DefaultPort);
+			Logger.Information("[OdysseyServer::Start] Server starting on {name} {port}", Constants.DefaultHostname, Constants.DefaultPort);
 			clientNegotiator = new TcpListener(Constants.DefaultHostname, Constants.DefaultPort);
 
 			// Start listening for client requests.
@@ -39,7 +45,7 @@ namespace Odyssey.Networking
 			{
 				while (client.TryDequeueMessage(out var dmsg))
 				{
-					Log.Information("[OdysseyServer::GetServerMessages] {msgType}", dmsg.hdr.Type);
+					Logger.Information("[OdysseyServer::GetServerMessages] {msgType}", dmsg.hdr.Type);
 					yield return (client, dmsg.msg);
 				}
 			}
@@ -67,7 +73,7 @@ namespace Odyssey.Networking
 
 		public void SendMessageToAllClients<T>(T message) where T : struct, INetworkMessage
 		{
-			Log.Debug("[OdysseyServer::SendMessageToAllClients]");
+			Logger.Debug("[OdysseyServer::SendMessageToAllClients]");
 
 			foreach (var c in clientList)
 			{
@@ -80,7 +86,7 @@ namespace Odyssey.Networking
 
 		public void SendMessageToAllClientsExcept<T>(T message, IEntity exceptedEntity) where T : struct, INetworkMessage
 		{
-			Log.Debug("[OdysseyServer::SendMessageToAllClientsExcept]");
+			Logger.Debug("[OdysseyServer::SendMessageToAllClientsExcept]");
 
 			foreach (var c in clientList)
 			{
@@ -96,7 +102,7 @@ namespace Odyssey.Networking
 
 		public void SendMessageToClient<T>(Guid id, T message) where T : struct, INetworkMessage
 		{
-			Log.Debug("[OdysseyServer::SendMessageToClient]");
+			Logger.Debug("[OdysseyServer::SendMessageToClient]");
 
 			var client = clientList.SingleOrDefault(c => c.ControllingEntity.Id == id);
 			if (client != null)
@@ -107,25 +113,25 @@ namespace Odyssey.Networking
 
 		private void ClientLoop()
 		{
-			Log.Debug("[OdysseyServer::ClientLoop] {negotiatorRun}", negotiatorRun);
+			Logger.Debug("[OdysseyServer::ClientLoop] {negotiatorRun}", negotiatorRun);
 
 			clientNegotiator.Start();
 			while (negotiatorRun)
 			{
-				Log.Debug("[OdysseyServer::ClientLoop] Waiting for a connection... ");
+				Logger.Debug("[OdysseyServer::ClientLoop] Waiting for a connection... ");
 
 				// Perform a blocking call to accept requests.
 				var client = clientNegotiator.AcceptTcpClient();
 
-				Log.Debug("[OdysseyServer::ClientLoop] Connected! {connected} {endpoint}", client.Client.Connected, client.Client.RemoteEndPoint.ToString());
+				Logger.Debug("[OdysseyServer::ClientLoop] Connected! {connected} {endpoint}", client.Client.Connected, client.Client.RemoteEndPoint.ToString());
 				var oc = new OdysseyClient(client);
 				clientList.Add(oc);
 
-				Thread.Sleep(10);
+				Thread.Sleep(100);
 			}
 
 			clientNegotiator.Stop();
-			Log.Debug("[OdysseyServer::ClientLoop] Client listener stopped!");
+			Logger.Debug("[OdysseyServer::ClientLoop] Client listener stopped!");
 		}
 
 		public bool Stop() => negotiatorRun = false;
