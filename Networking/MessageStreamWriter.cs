@@ -2,12 +2,12 @@
 
 namespace Odyssey.Networking
 {
-	public interface IMessageStreamSerialiser<T> where T : INetworkMessage
+	public interface IMessageStreamSerialiser<T> where T : IMessage
 	{
 		byte[] Serialise(T msg);
 	}
 
-	public class MessageStreamWriter<T> : MessageStreamWriterBase where T : INetworkMessage
+	public class MessageStreamWriter<T> : MessageStreamWriterBase where T : IMessage
 	{
 		private IMessageStreamSerialiser<T> serialiser;
 

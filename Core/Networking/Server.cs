@@ -44,7 +44,7 @@ namespace Odyssey.Networking
 
 		public int ClientCount => clientList.Count;
 
-		public IEnumerable<(OdysseyClient, INetworkMessage)> GetReceivedMessages()
+		public IEnumerable<(OdysseyClient, IMessage)> GetReceivedMessages()
 		{
 			foreach (var client in clientList)
 			{
@@ -76,7 +76,7 @@ namespace Odyssey.Networking
 		public void Update()
 			=> Update(null);
 
-		public void SendMessageToAllClients<T>(T message) where T : struct, INetworkMessage
+		public void SendMessageToAllClients<T>(T message) where T : struct, IMessage
 		{
 			Logger.Debug("[OdysseyServer::SendMessageToAllClients]");
 
@@ -89,7 +89,7 @@ namespace Odyssey.Networking
 			}
 		}
 
-		public void SendMessageToAllClientsExcept<T>(T message, IEntity exceptedEntity) where T : struct, INetworkMessage
+		public void SendMessageToAllClientsExcept<T>(T message, IEntity exceptedEntity) where T : struct, IMessage
 		{
 			Logger.Debug("[OdysseyServer::SendMessageToAllClientsExcept]");
 
@@ -105,7 +105,7 @@ namespace Odyssey.Networking
 			}
 		}
 
-		public void SendMessageToClient<T>(Guid id, T message) where T : struct, INetworkMessage
+		public void SendMessageToClient<T>(Guid id, T message) where T : struct, IMessage
 		{
 			Logger.Debug("[OdysseyServer::SendMessageToClient]");
 
@@ -130,6 +130,7 @@ namespace Odyssey.Networking
 
 				Logger.Debug("[OdysseyServer::ClientLoop] Connected! {connected} {endpoint}", client.Client.Connected, client.Client.RemoteEndPoint.ToString());
 				var oc = new OdysseyClient(client);
+				oc.InitMessaging();
 				clientList.Add(oc);
 
 				Thread.Sleep(100);

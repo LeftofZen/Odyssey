@@ -41,8 +41,8 @@ namespace Odyssey.Client
 			ClearLogs();
 
 			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1920;
-			graphics.PreferredBackBufferHeight = 1080;
+			graphics.PreferredBackBufferWidth = 1080;
+			graphics.PreferredBackBufferHeight = 768;
 
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;
@@ -88,12 +88,13 @@ namespace Odyssey.Client
 
 		public void ConnectToServer()
 		{
-			Logger.Debug("[ClientProcess::ConnectToServer] {connected}", client.Connected);
 			if (!client.Connected)
 			{
 				_ = client.Connect();
+				Logger.Debug("[ClientProcess::ConnectToServer] {connected}", client.Connected);
 			}
 		}
+
 		public void DisconnectFromServer()
 		{
 			Logger.Debug("[ClientProcess::DisconnectFromServer] {connected}", client.Connected);
@@ -101,6 +102,7 @@ namespace Odyssey.Client
 			{
 				client.Disconnect();
 			}
+			client = null;
 		}
 
 		protected override void LoadContent()

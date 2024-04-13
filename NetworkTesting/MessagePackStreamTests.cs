@@ -55,8 +55,8 @@ namespace NetworkTesting
 		public void TestSimplex_Single()
 		{
 			// arrange
-			var writer = new MessageStreamWriter<INetworkMessage>(server.GetStream(), new MessagePackSerialiser());
-			var reader = new MessageStreamReader<INetworkMessage>(client.GetStream(), new MessagePackDeserialiser());
+			var writer = new MessageStreamWriter<IMessage>(server.GetStream(), new MessagePackSerialiser());
+			var reader = new MessageStreamReader<IMessage>(client.GetStream(), new MessagePackDeserialiser());
 
 			// act - write a message from server to client
 			var msg = new ChatMessage() { Message = "Hello World", ClientId = Guid.NewGuid() };

@@ -6,15 +6,15 @@ using Serilog;
 
 namespace Odyssey.Networking
 {
-	public class OdysseyClient
+	public class OdysseyClient : IDisposable
 	{
 		private TcpClient tcpClient;
 
 		public IPEndPoint Endpoint { get; init; }
 
 		public IEntity? ControllingEntity;
-		private MessageStreamWriter<INetworkMessage>? writer;
-		private MessageStreamReader<INetworkMessage>? reader;
+		private MessageStreamWriter<IMessage>? writer;
+		private MessageStreamReader<IMessage>? reader;
 
 		public bool IsLoggedIn { get; set; }
 		public bool LoginMessageInFlight { get; set; }
@@ -26,7 +26,7 @@ namespace Odyssey.Networking
 			=> tcpClient != null && tcpClient.Connected; // && _connected;
 
 		//public Queue<(Header hdr, INetworkMessage msg)>? Messages => reader?.DelimitedMessageQueue;
-		public bool TryDequeueMessage(out (Header hdr, INetworkMessage msg) msg)
+		public bool TryDequeueMessage(out (Header hdr, IMessage msg) msg)
 		{
 			if (reader != null && reader.TryDequeue(out msg))
 			{
@@ -53,15 +53,15 @@ namespace Odyssey.Networking
 			Log.Debug("[Client::OdysseyClient] New OdysseyClient via endpoint {hostname} {port}", Endpoint.Address, Endpoint.Port);
 		}
 
-		private void InitMessaging()
+		public void InitMessaging()
 		{
 			Log.Debug("[Client::InitMessaging] {connected}", tcpClient.Connected);
 			if (tcpClient.Connected)
 			{
 				readMsgs = true;
 
-				writer = new MessageStreamWriter<INetworkMessage>(tcpClient.GetStream(), new MessagePackSerialiser());
-				reader = new MessageStreamReader<INetworkMessage>(tcpClient.GetStream(), new MessagePackDeserialiser());
+				writer = new MessageStreamWriter<IMessage>(tcpClient.GetStream(), new MessagePackSerialiser());
+				reader = new MessageStreamReader<IMessage>(tcpClient.GetStream(), new MessagePackDeserialiser());
 
 				msgReaderTask = Task.Run(ReadMessageLoop);
 			}
@@ -133,13 +133,13 @@ namespace Odyssey.Networking
 
 		void ReadMessageLoop()
 		{
-			Log.Debug("[Client::ReadMessages] Client message loop starting {readMsgs}", readMsgs);
+			Log.Debug("[Client::ReadMessageLoop] Client message loop starting {readMsgs}", readMsgs);
 			while (readMsgs)
 			{
 				if (!tcpClient.Connected)
 				{
-					Log.Information("[Client::ReadMessages] Client disconnected from server. Aborting message loop");
-					return;
+					Log.Information("[Client::ReadMessageLoop] Client disconnected from server. Aborting message loop");
+					break;
 				}
 
 				if (reader is null)
@@ -148,13 +148,15 @@ namespace Odyssey.Networking
 
 					if (reader is null)
 					{
-						Log.Error("[Client::ReadMessages] Message reader is null");
-						return;
+						Log.Error("[Client::ReadMessageLoop] Message reader is null");
+						break;
 					}
 				}
 
 				reader.Update();
 			}
+
+			Log.Information("[Client::ReadMessageLoop] Loop terminated");
 		}
 
 		public int PendingMessages => writer?.PendingMessages ?? 0;
@@ -186,7 +188,7 @@ namespace Odyssey.Networking
 			}
 		}
 
-		public bool QueueMessage<T>(T message) where T : struct, INetworkMessage
+		public bool QueueMessage<T>(T message) where T : struct, IMessage
 		{
 			Log.Debug("[Client::QueueMessage] {type} {ctype}", message.Type, message.GetType());
 
@@ -203,6 +205,11 @@ namespace Odyssey.Networking
 
 			writer.Enqueue(message);
 			return true;
+		}
+
+		public void Dispose()
+		{
+			tcpClient.Dispose();
 		}
 	}
 }

@@ -1,4 +1,6 @@
-﻿/* OpenSimplex Noise in C#
+﻿/* Taken from https://gist.github.com/digitalshadow/134a3a02b67cecd72181
+ * 
+ * OpenSimplex Noise in C#
  * Ported from https://gist.github.com/KdotJPG/b1270127455a94ac5d19
  * and heavily refactored to improve performance. */
 

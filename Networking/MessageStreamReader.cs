@@ -2,12 +2,12 @@
 
 namespace Odyssey.Networking
 {
-	public interface IMessageStreamDeserialiser<T> where T : INetworkMessage
+	public interface IMessageStreamDeserialiser<T> where T : IMessage
 	{
 		T Deserialise(Header hdr, byte[] bytes);
 	}
 
-	public class MessageStreamReader<T> : MessageStreamReaderBase where T : INetworkMessage
+	public class MessageStreamReader<T> : MessageStreamReaderBase where T : IMessage
 	{
 		private IMessageStreamDeserialiser<T> deserialiser;
 
@@ -63,7 +63,7 @@ namespace Odyssey.Networking
 		private void UpdateInternal()
 		{
 			// read from stream
-			var read = bs.Read(cbuf, ptrEnd, 256);
+			var read = bs.Read(cbuf, ptrEnd, Math.Min(cbuf.Length - ptrEnd, 256));
 			ptrEnd += read;
 
 			var rom = new ReadOnlyMemory<byte>(cbuf);

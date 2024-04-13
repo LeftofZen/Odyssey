@@ -22,9 +22,14 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Content", "Content\Content.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Networking", "Networking\Networking.csproj", "{157EA69C-9692-48B9-B7CB-A743AE4007FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Testing", "NetworkTesting\Testing.csproj", "{3F8342A0-238D-4CE0-AFEE-BE906705E2FD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Testing", "NetworkTesting\Testing.csproj", "{3F8342A0-238D-4CE0-AFEE-BE906705E2FD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05} = {9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6F8D1504-6EE5-46F9-A57E-349B2279C873}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
 Global

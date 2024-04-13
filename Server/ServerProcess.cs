@@ -54,8 +54,8 @@ namespace Odyssey.Server
 			ClearLogs();
 
 			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1920;
-			graphics.PreferredBackBufferHeight = 1080;
+			graphics.PreferredBackBufferWidth = 1080;
+			graphics.PreferredBackBufferHeight = 768;
 
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;

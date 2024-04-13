@@ -2,9 +2,9 @@
 
 namespace Odyssey.Networking
 {
-	public class MessagePackSerialiser : IMessageStreamSerialiser<INetworkMessage>
+	public class MessagePackSerialiser : IMessageStreamSerialiser<IMessage>
 	{
-		public byte[] Serialise(INetworkMessage msg)
+		public byte[] Serialise(IMessage msg)
 			=> MessagePackSerializer.Serialize(msg.GetType(), msg);
 		public byte[] Serialise<T>(T msg) => throw new NotImplementedException();
 	}
