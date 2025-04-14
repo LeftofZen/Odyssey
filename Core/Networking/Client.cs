@@ -1,8 +1,8 @@
-﻿using System.Net;
-using System.Net.Sockets;
-using Odyssey.ECS;
+﻿using Odyssey.ECS;
 using Odyssey.Networking.Messages;
 using Serilog;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Odyssey.Networking
 {
@@ -61,7 +61,7 @@ namespace Odyssey.Networking
 				readMsgs = true;
 
 				writer = new MessageStreamWriter<IMessage>(tcpClient.GetStream(), new MessagePackSerialiser());
-				reader = new MessageStreamReader<IMessage>(tcpClient.GetStream(), new MessagePackDeserialiser());
+				//reader = new MessageStreamReader<IMessage>(tcpClient.GetStream(), new MessagePackDeserialiser());
 
 				msgReaderTask = Task.Run(ReadMessageLoop);
 			}
@@ -131,7 +131,7 @@ namespace Odyssey.Networking
 
 		private bool readMsgs;
 
-		void ReadMessageLoop()
+		private void ReadMessageLoop()
 		{
 			Log.Debug("[Client::ReadMessageLoop] Client message loop starting {readMsgs}", readMsgs);
 			while (readMsgs)

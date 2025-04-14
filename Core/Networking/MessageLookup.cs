@@ -4,18 +4,18 @@ namespace Odyssey.Networking
 {
 	public class MessageLookup : IMessageLookup<NetworkMessageType>
 	{
-		static readonly Dictionary<NetworkMessageType, Type> _ToType = new()
+		static readonly Dictionary<uint, Type> _ToType = new()
 		{
-			{ NetworkMessageType.LoginRequest, typeof(LoginRequest) },
-			{ NetworkMessageType.LoginResponse, typeof(LoginResponse) },
-			{ NetworkMessageType.LogoutRequest, typeof(LogoutRequest) },
-			{ NetworkMessageType.LogoutResponse, typeof(LogoutResponse) },
-			{ NetworkMessageType.InputUpdate, typeof(InputUpdate) },
-			{ NetworkMessageType.PlayerUpdate, typeof(PlayerUpdate) },
-			{ NetworkMessageType.WorldUpdate, typeof(WorldUpdate) },
-			{ NetworkMessageType.ChatMessage, typeof(ChatMessage) },
-			{ NetworkMessageType.Broadcast, typeof(BroadcastMessage) },
-			{ NetworkMessageType.KeepAlive, typeof(KeepAliveMessage) },
+			{ (uint)NetworkMessageType.LoginRequest, typeof(LoginRequest) },
+			{ (uint)NetworkMessageType.LoginResponse, typeof(LoginResponse) },
+			{ (uint)NetworkMessageType.LogoutRequest, typeof(LogoutRequest) },
+			{ (uint)NetworkMessageType.LogoutResponse, typeof(LogoutResponse) },
+			{ (uint)NetworkMessageType.InputUpdate, typeof(InputUpdate) },
+			{ (uint)NetworkMessageType.PlayerUpdate, typeof(PlayerUpdate) },
+			{ (uint)NetworkMessageType.WorldUpdate, typeof(WorldUpdate) },
+			{ (uint)NetworkMessageType.ChatMessage, typeof(ChatMessage) },
+			{ (uint)NetworkMessageType.Broadcast, typeof(BroadcastMessage) },
+			{ (uint)NetworkMessageType.KeepAlive, typeof(KeepAliveMessage) },
 		};
 
 		static readonly Dictionary<Type, NetworkMessageType> _ToNetwork = new()
@@ -32,7 +32,7 @@ namespace Odyssey.Networking
 			{ typeof(KeepAliveMessage), NetworkMessageType.KeepAlive },
 		};
 
-		public IDictionary<NetworkMessageType, Type> ToType
+		public IDictionary<uint, Type> ToType
 			=> _ToType;
 
 		public IDictionary<Type, NetworkMessageType> ToNetwork

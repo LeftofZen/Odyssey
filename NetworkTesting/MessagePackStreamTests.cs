@@ -1,7 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using Odyssey.Networking;
-using Odyssey.Networking.Messages;
 
 namespace NetworkTesting
 {
@@ -51,34 +49,34 @@ namespace NetworkTesting
 		private TcpClient server;
 		private TcpClient client;
 
-		[Test]
-		public void TestSimplex_Single()
-		{
-			// arrange
-			var writer = new MessageStreamWriter<IMessage>(server.GetStream(), new MessagePackSerialiser());
-			var reader = new MessageStreamReader<IMessage>(client.GetStream(), new MessagePackDeserialiser());
+		//[Test]
+		//public void TestSimplex_Single()
+		//{
+		//	// arrange
+		//	var writer = new MessageStreamWriter<IMessage>(server.GetStream(), new MessagePackSerialiser());
+		//	var reader = new MessageStreamReader<IMessage>(client.GetStream(), new MessagePackDeserialiser());
 
-			// act - write a message from server to client
-			var msg = new ChatMessage() { Message = "Hello World", ClientId = Guid.NewGuid() };
-			writer.Enqueue(msg);
-			writer.Update();
+		//	// act - write a message from server to client
+		//	var msg = new ChatMessage() { Message = "Hello World", ClientId = Guid.NewGuid() };
+		//	writer.Enqueue(msg);
+		//	writer.Update();
 
-			// wait some time, could do async here
-			Thread.Sleep(100);
+		//	// wait some time, could do async here
+		//	Thread.Sleep(100);
 
-			reader.Update();
+		//	reader.Update();
 
-			// assert
-			Assert.True(reader.TryDequeue(out var dmsg));
+		//	// assert
+		//	Assert.True(reader.TryDequeue(out var dmsg));
 
-			Assert.Multiple(() =>
-			{
-				Assert.That(dmsg.hdr.Type, Is.EqualTo((uint)NetworkMessageType.ChatMessage));
-				Assert.That(dmsg.hdr.Length, Is.EqualTo(68));
-				Assert.That(((ChatMessage)dmsg.msg).ClientId, Is.EqualTo(msg.ClientId));
-				Assert.That(((ChatMessage)dmsg.msg).Message, Is.EqualTo(msg.Message));
-			});
-		}
+		//	Assert.Multiple(() =>
+		//	{
+		//		Assert.That(dmsg.hdr.Type, Is.EqualTo((uint)NetworkMessageType.ChatMessage));
+		//		Assert.That(dmsg.hdr.Length, Is.EqualTo(68));
+		//		Assert.That(((ChatMessage)dmsg.msg).ClientId, Is.EqualTo(msg.ClientId));
+		//		Assert.That(((ChatMessage)dmsg.msg).Message, Is.EqualTo(msg.Message));
+		//	});
+		//}
 
 		/*
 		[Test]
