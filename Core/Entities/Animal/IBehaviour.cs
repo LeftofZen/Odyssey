@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using Odyssey;
 using Odyssey.ECS;
 
 namespace Odyssey.Entities.Animal

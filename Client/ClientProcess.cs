@@ -1,5 +1,4 @@
-﻿using System;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -7,12 +6,13 @@ using Monogame.Imgui.Renderer;
 using MonoGame.Extended.Input;
 using Odyssey.Entities;
 using Odyssey.Logging;
-using Odyssey.Networking;
-using Odyssey.Networking.Messages;
+using Odyssey.Messaging;
+using Odyssey.Messaging.Messages;
 using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
 using Serilog.Exceptions;
+using System;
 
 namespace Odyssey.Client
 {
@@ -40,9 +40,11 @@ namespace Odyssey.Client
 			Id = Guid.NewGuid();
 			ClearLogs();
 
-			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1080;
-			graphics.PreferredBackBufferHeight = 768;
+			graphics = new GraphicsDeviceManager(this)
+			{
+				PreferredBackBufferWidth = 1080,
+				PreferredBackBufferHeight = 768
+			};
 
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;
@@ -52,7 +54,7 @@ namespace Odyssey.Client
 			client = new OdysseyClient(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
 		}
 
-		void ClearLogs()
+		private void ClearLogs()
 		{
 			logsink = new InMemorySink();
 			Logger = new LoggerConfiguration()
@@ -119,7 +121,7 @@ namespace Odyssey.Client
 			}
 
 			var kb = KeyboardExtended.GetState();
-			if (kb.WasKeyJustDown(Keys.OemTilde))
+			if (kb.WasKeyReleased(Keys.OemTilde))
 			{
 				renderLog = !renderLog;
 			}
@@ -151,7 +153,7 @@ namespace Odyssey.Client
 					Logger.Information("[ClientProcess::NetworkReceive] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
 				}
 
-				if (dmsg.msg is LogoutResponse logoutResponse)
+				if (dmsg.msg is LogoutResponse)
 				{
 					// if loginResponse == successful
 					var oldId = player.Id;

@@ -1,6 +1,6 @@
-﻿using Odyssey.Networking.Messages;
+﻿using Odyssey.Messaging.Messages;
 
-namespace Odyssey.Networking
+namespace Odyssey.Messaging
 {
 	public class MessageLookup : IMessageLookup<NetworkMessageType>
 	{

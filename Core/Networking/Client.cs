@@ -1,10 +1,13 @@
-﻿using Odyssey.ECS;
-using Odyssey.Networking.Messages;
+﻿using Messaging.MessagePack;
+using Messaging.Reading;
+using Messaging.Writing;
+using Odyssey.ECS;
+using Odyssey.Messaging.Messages;
 using Serilog;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Odyssey.Networking
+namespace Odyssey.Messaging
 {
 	public class OdysseyClient : IDisposable
 	{

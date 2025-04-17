@@ -1,27 +1,7 @@
 ﻿using Serilog;
 
-namespace Odyssey.Networking
+namespace Messaging.Writing
 {
-	public interface IMessageStreamSerialiser<T> where T : IMessage
-	{
-		byte[] Serialise(T msg);
-	}
-
-	public class MessageStreamWriter<T> : MessageStreamWriterBase where T : IMessage
-	{
-		private IMessageStreamSerialiser<T> serialiser;
-
-		public MessageStreamWriter(Stream stream, IMessageStreamSerialiser<T> serialiser, int maxMsgSize = DefaultMaxMsgSize) : base(stream, maxMsgSize) => this.serialiser = serialiser;
-
-		public void Enqueue(T msg)
-		{
-			Log.Debug("[MessageStreamWriter::Enqueue] {type}", msg.Type);
-
-			var s = serialiser.Serialise(msg);
-			Enqueue(msg.Type, s);
-		}
-	}
-
 	public class MessageStreamWriterBase
 	{
 		public int MaxMsgSize { get; init; }

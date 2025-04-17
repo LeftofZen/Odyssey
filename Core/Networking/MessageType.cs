@@ -1,4 +1,4 @@
-﻿namespace Odyssey.Networking
+﻿namespace Odyssey.Messaging
 {
 	public enum NetworkMessageType
 	{

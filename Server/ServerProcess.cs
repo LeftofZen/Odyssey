@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -10,13 +8,15 @@ using Odyssey.ECS;
 using Odyssey.Entities;
 //using Odyssey.ImGui;
 using Odyssey.Logging;
-using Odyssey.Networking;
-using Odyssey.Networking.Messages;
+using Odyssey.Messaging;
+using Odyssey.Messaging.Messages;
 using Odyssey.Noise;
 using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
 using Serilog.Exceptions;
+using System;
+using System.Linq;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace Odyssey.Server
@@ -26,8 +26,7 @@ namespace Odyssey.Server
 		private GraphicsDeviceManager graphics;
 		private SpriteBatch sb;
 		private OdysseyServer server;
-
-		ILogger Logger;
+		private ILogger Logger;
 		private InMemorySink logsink;
 		private bool renderLog = true;
 
@@ -53,9 +52,11 @@ namespace Odyssey.Server
 		{
 			ClearLogs();
 
-			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1080;
-			graphics.PreferredBackBufferHeight = 768;
+			graphics = new GraphicsDeviceManager(this)
+			{
+				PreferredBackBufferWidth = 1080,
+				PreferredBackBufferHeight = 768
+			};
 
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;
@@ -64,13 +65,14 @@ namespace Odyssey.Server
 
 			gameState = new()
 			{
-				Entities = new()
+				Entities = []
 			};
 
 			server = new OdysseyServer(Logger);
 
 		}
-		void ClearLogs()
+
+		private void ClearLogs()
 		{
 			logsink = new InMemorySink();
 			Logger = new LoggerConfiguration()
@@ -83,7 +85,7 @@ namespace Odyssey.Server
 			Log.Logger = Logger;
 		}
 
-		protected override void OnExiting(object sender, EventArgs args)
+		protected override void OnExiting(object sender, ExitingEventArgs args)
 		{
 			_ = server.Stop();
 			base.OnExiting(sender, args);
@@ -126,7 +128,7 @@ namespace Odyssey.Server
 		protected override void Update(GameTime gameTime)
 		{
 			var kb = KeyboardExtended.GetState();
-			if (kb.WasKeyJustDown(Keys.OemTilde))
+			if (kb.WasKeyReleased(Keys.OemTilde))
 			{
 				renderLog = !renderLog;
 			}

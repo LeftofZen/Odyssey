@@ -1,11 +1,10 @@
-﻿using Odyssey.Networking;
-using Odyssey.Networking.Messages;
+﻿using Odyssey.Messaging;
+using Odyssey.Messaging.Messages;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 
-namespace Testing
+namespace Network
 {
+	[TestFixture]
 	public class OdysseyNetworkingTests
 	{
 		private OdysseyServer server;
@@ -18,7 +17,7 @@ namespace Testing
 			Assert.That(server.Start(), Is.True);
 			Assert.That(server.ClientCount, Is.Zero);
 
-			client = new OdysseyClient(Constants.DefaultHostname, Constants.DefaultPort);
+			client = new OdysseyClient(Odyssey.Networking.Constants.DefaultHostname, Odyssey.Networking.Constants.DefaultPort);
 			Assert.That(client.Connect(), Is.True);
 
 			Assert.That(client.Connected, Is.True);
@@ -29,12 +28,13 @@ namespace Testing
 		public void TearDown()
 		{
 			client.Disconnect();
+			client.Dispose();
 			//Assert.That(client.Connected, Is.False);
 			//Assert.That(server.ClientCount, Is.Zero);
 		}
 
 		[Test]
-		public void TestServerClientSendMessage()
+		public void ServerClientSendMessage()
 		{
 			var msg = new BroadcastMessage() { Message = "Hello World" };
 			server.SendMessageToAllClients(msg);
@@ -58,7 +58,7 @@ namespace Testing
 		}
 
 		[Test]
-		public void TestClientServerSendMessage()
+		public void ClientServerSendMessage()
 		{
 			Assert.Fail();
 		}

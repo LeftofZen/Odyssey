@@ -37,12 +37,12 @@ namespace NetworkTesting
 		public void TearDown()
 		{
 			listener.Stop();
-
 			client.Close();
 			server.Close();
 
 			client.Dispose();
 			server.Dispose();
+			listener.Dispose();
 		}
 
 		private TcpListener listener;

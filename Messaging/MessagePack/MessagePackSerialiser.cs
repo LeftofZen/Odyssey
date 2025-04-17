@@ -1,6 +1,8 @@
 ﻿using MessagePack;
+using Messaging.Writing;
+using Odyssey.Messaging;
 
-namespace Odyssey.Networking
+namespace Messaging.MessagePack
 {
 	public class MessagePackSerialiser : IMessageStreamSerialiser<IMessage>
 	{

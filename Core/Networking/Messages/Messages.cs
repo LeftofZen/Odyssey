@@ -3,7 +3,7 @@ using MessagePack;
 using Microsoft.Xna.Framework.Input;
 
 // TODO - autogenerate this file with source generators https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/
-namespace Odyssey.Networking.Messages
+namespace Odyssey.Messaging.Messages
 {
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]

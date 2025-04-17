@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using Odyssey.ECS;
-using Odyssey.Networking.Messages;
+using Odyssey.Messaging.Messages;
 using Serilog;
 
 namespace Odyssey.Entities

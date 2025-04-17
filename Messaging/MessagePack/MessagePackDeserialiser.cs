@@ -1,6 +1,8 @@
 ﻿using MessagePack;
+using Messaging.Reading;
+using Odyssey.Messaging;
 
-namespace Odyssey.Networking
+namespace Messaging.MessagePack
 {
 	public class MessagePackDeserialiser<TEnum> : IMessageStreamDeserialiser<IMessage> where TEnum : struct, Enum
 	{

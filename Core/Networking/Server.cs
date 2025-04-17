@@ -1,10 +1,9 @@
-﻿using System.Net.Sockets;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Odyssey.ECS;
-using Odyssey.Logging;
 using Serilog;
+using System.Net.Sockets;
 
-namespace Odyssey.Networking
+namespace Odyssey.Messaging
 {
 	public class OdysseyServer
 	{
@@ -14,16 +13,17 @@ namespace Odyssey.Networking
 		private bool negotiatorRun = true;
 
 		public IList<OdysseyClient> Clients => clientList;
-		ILogger Logger;
+
+		private ILogger Logger;
 
 		public OdysseyServer(ILogger logger)
 		{
-			clientList = new List<OdysseyClient>();
+			clientList = [];
 			Logger = logger;
 		}
 		public OdysseyServer()
 		{
-			clientList = new List<OdysseyClient>();
+			clientList = [];
 			Logger = Log.Logger;
 		}
 
@@ -31,8 +31,8 @@ namespace Odyssey.Networking
 
 		public bool Start()
 		{
-			Logger.Information("[OdysseyServer::Start] Server starting on {name} {port}", Constants.DefaultHostname, Constants.DefaultPort);
-			clientNegotiator = new TcpListener(Constants.DefaultHostname, Constants.DefaultPort);
+			Logger.Information("[OdysseyServer::Start] Server starting on {name} {port}", Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
+			clientNegotiator = new TcpListener(Networking.Constants.DefaultHostname, Networking.Constants.DefaultPort);
 
 			// Start listening for client requests.
 
@@ -110,10 +110,7 @@ namespace Odyssey.Networking
 			Logger.Debug("[OdysseyServer::SendMessageToClient]");
 
 			var client = clientList.SingleOrDefault(c => c.ControllingEntity.Id == id);
-			if (client != null)
-			{
-				client.QueueMessage(message);
-			}
+			_ = client?.QueueMessage(message);
 		}
 
 		private void ClientLoop()

@@ -1,10 +1,9 @@
-﻿using Odyssey.Networking;
-using System.Diagnostics;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 
-namespace Testing
+namespace Network
 {
+	[TestFixture]
 	public class ClientDisconnectTests
 	{
 		[SetUp]
@@ -38,12 +37,12 @@ namespace Testing
 		public void TearDown()
 		{
 			listener.Stop();
-
 			client.Close();
 			server.Close();
 
 			client.Dispose();
 			server.Dispose();
+			listener.Dispose();
 		}
 
 		private TcpListener listener;
@@ -51,13 +50,13 @@ namespace Testing
 		private TcpClient client;
 
 		[Test]
-		public void TestDisconnect()
+		public void Disconnect()
 		{
 			// assert client+server connected
 			Assert.Multiple(() =>
 			{
-				Assert.True(server.Connected);
-				Assert.True(client.Connected);
+				Assert.That(server.Connected);
+				Assert.That(client.Connected);
 			});
 
 			// disconnect client
@@ -66,8 +65,8 @@ namespace Testing
 			// server should show client disconnected
 			Assert.Multiple(() =>
 			{
-				Assert.False(server.Connected);
-				Assert.False(client.Connected);
+				Assert.That(server.Connected);
+				Assert.That(client.Connected);
 			});
 		}
 	}
