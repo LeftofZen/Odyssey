@@ -10,10 +10,10 @@ namespace Odyssey
 	// to implement this pattern correctly and avoid rewriting code
 	public static class GameServices
 	{
-		public static readonly Dictionary<string, Texture2D> Textures = new(); // TextureCollection??
-		public static readonly Dictionary<string, SpriteFont> Fonts = new(); //
-		public static readonly Dictionary<string, SoundEffect> SoundEffects = new(); // SoundBank??
-		public static readonly Dictionary<string, Song> Songs = new(); // SongCollection??
+		public static readonly Dictionary<string, Texture2D> Textures = []; // TextureCollection??
+		public static readonly Dictionary<string, SpriteFont> Fonts = []; //
+		public static readonly Dictionary<string, SoundEffect> SoundEffects = []; // SoundBank??
+		public static readonly Dictionary<string, Song> Songs = []; // SongCollection??
 		public static InputManager InputManager;
 		public static readonly Random PRNG = new(Constants.Seed);
 
@@ -32,11 +32,11 @@ namespace Odyssey
 			pixel.SetData(new Color[] { Color.White });
 			Textures.Add(nameof(pixel), pixel);
 
-			//Content.RootDirectory = "Core\\Content";
+			Content.RootDirectory = "C:\\Users\\bigba\\source\\repos\\Odyssey\\Content\\Content\\bin\\DesktopGL";
 			var fontNames = new List<string> { "Calibri" };
 			foreach (var v in fontNames)
 			{
-				Fonts.Add(v, Content.Load<SpriteFont>("fonts\\" + v));
+				Fonts.Add(v, Content.Load<SpriteFont>("Fonts\\" + v));
 				//Fonts.Add(v, null);
 			}
 

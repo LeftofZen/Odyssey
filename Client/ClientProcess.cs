@@ -2,8 +2,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Monogame.Imgui.Renderer;
 using MonoGame.Extended.Input;
+using MonoGame.ImGuiNet;
 using Odyssey.Entities;
 using Odyssey.Logging;
 using Odyssey.Messaging;
@@ -32,7 +32,7 @@ namespace Odyssey.Client
 		public Player player;
 
 		// rendering
-		private ImGuiRenderer GuiRenderer; //This is the ImGuiRenderer
+		private ImGuiRenderer GuiRenderer;
 		public Camera camera;
 
 		public ClientProcess()
@@ -99,12 +99,11 @@ namespace Odyssey.Client
 
 		public void DisconnectFromServer()
 		{
-			Logger.Debug("[ClientProcess::DisconnectFromServer] {connected}", client.Connected);
-			if (client.Connected)
+			Logger.Debug("[ClientProcess::DisconnectFromServer] {connected}", client?.Connected);
+			if (client?.Connected == true)
 			{
 				client.Disconnect();
 			}
-			client = null;
 		}
 
 		protected override void LoadContent()
@@ -140,6 +139,11 @@ namespace Odyssey.Client
 
 		private void NetworkReceive()
 		{
+			if (client == null)
+			{
+				return;
+			}
+
 			while (client.TryDequeueMessage(out var dmsg))
 			{
 				Logger.Debug("[ClientProcess::NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
@@ -185,7 +189,7 @@ namespace Odyssey.Client
 
 		private void NetworkSend()
 		{
-			if (!client.Connected)
+			if (client?.Connected != true)
 			{
 				return;
 			}
@@ -263,8 +267,10 @@ namespace Odyssey.Client
 
 			}
 
-			sb.DrawDebugStringCentered(GameServices.Fonts["Calibri"], client.IsLoggedIn.ToString(), new Vector2(20, 300), Color.White);
-
+			if (client != null)
+			{
+				sb.DrawDebugStringCentered(GameServices.Fonts["Calibri"], client.IsLoggedIn.ToString(), new Vector2(20, 300), Color.White);
+			}
 
 			//DrawMap(sb, mapLookup["map1"]);
 			//DrawDebugString(sb, fontLookup["Calibri"], $"DrawCount={drawCount}", new Vector2(8, 8));
@@ -303,15 +309,19 @@ namespace Odyssey.Client
 
 			sb.End();
 
-			GuiRenderer.BeforeLayout(this, gameTime);
+			GuiRenderer.BeginLayout(gameTime);
 			RenderImGui();
-			GuiRenderer.AfterLayout();
+			GuiRenderer.EndLayout();
 
 			base.Draw(gameTime);
 		}
+
 		public void RenderImGui()
 		{
-			ImGui.BulletText(client.ConnectionDetails);
+			if (client != null)
+			{
+				ImGui.BulletText(client.ConnectionDetails);
+			}
 
 			if (ImGui.Button("Connect"))
 			{
@@ -326,7 +336,7 @@ namespace Odyssey.Client
 				ClearLogs();
 			}
 
-			if (client.Connected)
+			if (client?.Connected == true)
 			{
 				if (ImGui.Button("Login"))
 				{

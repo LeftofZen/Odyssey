@@ -8,7 +8,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csp
 		{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05} = {9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Core\Common.csproj", "{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}"
 	ProjectSection(ProjectDependencies) = postProject
 		{157EA69C-9692-48B9-B7CB-A743AE4007FC} = {157EA69C-9692-48B9-B7CB-A743AE4007FC}
 	EndProjectSection
@@ -17,8 +17,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csp
 	ProjectSection(ProjectDependencies) = postProject
 		{9092704A-DCE1-4D77-9D7A-EE5C89CFBE05} = {9092704A-DCE1-4D77-9D7A-EE5C89CFBE05}
 	EndProjectSection
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Content", "Content\Content.shproj", "{A0CDBD0E-3A41-42B7-9425-A838BC2C7383}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Messaging", "Messaging\Messaging.csproj", "{157EA69C-9692-48B9-B7CB-A743AE4007FC}"
 EndProject
@@ -33,6 +31,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Networking", "Networking\Networking.csproj", "{86F3AB4A-A5E2-40F3-B656-656835010F64}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Content", "Content\Content.shproj", "{A0CDBD0E-3A41-42B7-9425-A838BC2C7383}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,6 +72,7 @@ Global
 		SolutionGuid = {A490DDB2-4437-4C00-95A2-9BBDB31B8DB1}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Content\Content.projitems*{9092704a-dce1-4d77-9d7a-ee5c89cfbe05}*SharedItemsImports = 5
 		Content\Content.projitems*{a0cdbd0e-3a41-42b7-9425-a838bc2c7383}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

@@ -4,9 +4,9 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using MonoGame.Extended.Input;
+using MonoGame.ImGuiNet;
 using Odyssey.ECS;
 using Odyssey.Entities;
-//using Odyssey.ImGui;
 using Odyssey.Logging;
 using Odyssey.Messaging;
 using Odyssey.Messaging.Messages;
@@ -42,9 +42,7 @@ namespace Odyssey.Server
 
 		#endregion
 
-		#region
-		private Monogame.Imgui.Renderer.ImGuiRenderer GuiRenderer; //This is the ImGuiRenderer
-		#endregion
+		private ImGuiRenderer GuiRenderer;
 
 		public Vector2 clientMousePos = Vector2.Zero;
 
@@ -94,7 +92,7 @@ namespace Odyssey.Server
 		protected override void Initialize()
 		{
 			// imgui
-			GuiRenderer = new Monogame.Imgui.Renderer.ImGuiRenderer(this);
+			GuiRenderer = new ImGuiRenderer(this);
 			GuiRenderer.RebuildFontAtlas();
 
 			// world
@@ -228,9 +226,9 @@ namespace Odyssey.Server
 
 			sb.End();
 
-			GuiRenderer.BeforeLayout(this, gameTime);
+			GuiRenderer.BeginLayout(gameTime);
 			RenderImGui();
-			GuiRenderer.AfterLayout();
+			GuiRenderer.EndLayout();
 
 			base.Draw(gameTime);
 		}
