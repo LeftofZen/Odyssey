@@ -73,8 +73,7 @@ namespace Odyssey.Messaging
 
 		public void Update(GameTime? gameTime)
 		{
-			clientList = clientList.Where(c => c.Connected).ToList();
-			foreach (var c in clientList)
+			foreach (var c in clientList.Where(c => c.Connected))
 			{
 				c.FlushMessages();
 			}

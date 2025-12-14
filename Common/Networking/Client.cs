@@ -80,8 +80,21 @@ namespace Odyssey.Messaging
 
 			try
 			{
-				if (!tcpClient.Connected)
+				bool isConnected = false;
+				try
 				{
+					isConnected = tcpClient.Connected;
+				}
+				catch (ObjectDisposedException)
+				{
+					isConnected = false;
+				}
+
+				if (!isConnected)
+				{
+					// TcpClient cannot be reused after Dispose/Close. We must create a new instance.
+					tcpClient = new TcpClient();
+
 					await tcpClient.ConnectAsync(Endpoint);
 					if (!tcpClient.Connected)
 					{
@@ -133,6 +146,7 @@ namespace Odyssey.Messaging
 		public void Disconnect()
 		{
 			Log.Information("[Client::Disconnect]");
+			readMsgs = false;
 			tcpClient.Close(); // cancel/join msgReaderTask as well
 			tcpClient.Dispose();
 		}

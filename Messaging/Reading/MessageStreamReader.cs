@@ -18,6 +18,7 @@ namespace Messaging.Reading
 			return false;
 		}
 
-		public MessageStreamReader(Stream stream, IMessageStreamDeserialiser<T> deserialiser, int maxMsgSize = 1024) : base(stream, maxMsgSize) => this.deserialiser = deserialiser;
+		public MessageStreamReader(Stream stream, IMessageStreamDeserialiser<T> deserialiser, int maxMsgSize = 1024) 
+			: base(stream, maxMsgSize) => this.deserialiser = deserialiser;
 	}
 }
