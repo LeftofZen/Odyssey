@@ -5,17 +5,16 @@ using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using MonoGame.Extended.Input;
 using MonoGame.ImGuiNet;
-using Odyssey.ECS;
 using Odyssey.Entities;
 using Odyssey.Logging;
 using Odyssey.Messaging;
 using Odyssey.Messaging.Messages;
 using Odyssey.Noise;
-using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
 using Serilog.Exceptions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
@@ -133,8 +132,11 @@ namespace Odyssey.Server
 
 			server.Update(gameTime);
 
-			NetworkReceive(gameTime);
-			NetworkSend();
+			// these can be done concurrently and should be async
+			{
+				NetworkReceive(gameTime);
+				NetworkSend();
+			}
 
 			base.Update(gameTime);
 		}
@@ -236,33 +238,21 @@ namespace Odyssey.Server
 		public void RenderImGui()
 		{
 			ImGui.Text($"Clients={server.ClientCount}");
+			var disconnectList = new List<OdysseyClient>();
 			foreach (var c in server.Clients)
 			{
 				ImGui.BulletText(c.ConnectionDetails);
-			}
-		}
-	}
 
-	public static class MapRenderer
-	{
-		public static void Draw(SpriteBatch sb, Map map, int tileSize = 32)
-		{
-			for (var y = 0; y < map.Height; y++)
-			{
-				for (var x = 0; x < map.Width; x++)
+				if (ImGui.Button("Disconnect"))
 				{
-					sb.FillRectangle(new RectangleF(x * tileSize, y * tileSize, tileSize, tileSize), map.At(x, y).Colour);
+					disconnectList.Add(c);
 				}
 			}
-		}
-	}
 
-	public static class EntityRenderer
-	{
-		public static void Draw(SpriteBatch sb, IEntity entity, float scale)
-		{
-			sb.FillRectangle(new RectangleF(entity.Position.X * scale, entity.Position.X * scale, entity.GetSize().X * scale, entity.GetSize().Y * scale), Color.Chocolate);
-			sb.DrawDebugStringCentered(GameServices.Fonts.First().Value, entity.DisplayName, entity.Position, Color.White);
+			foreach (var c in disconnectList)
+			{
+				server.DisconnectClient(c);
+			}
 		}
 	}
 }

@@ -64,7 +64,7 @@ namespace Odyssey.Messaging
 				readMsgs = true;
 
 				writer = new MessageStreamWriter<IMessage>(tcpClient.GetStream(), new MessagePackSerialiser());
-				//reader = new MessageStreamReader<IMessage>(tcpClient.GetStream(), new MessagePackDeserialiser());
+				reader = new MessageStreamReader<IMessage>(tcpClient.GetStream(), new MessagePackDeserialiser<NetworkMessageType>(new MessageLookup()));
 
 				msgReaderTask = Task.Run(ReadMessageLoop);
 			}
@@ -112,6 +112,8 @@ namespace Odyssey.Messaging
 				LoginMessageInFlight = true;
 				return QueueMessage(new LoginRequest() { Username = user, Password = pass });
 			}
+
+			Log.Information("[Client::Login] LoginMessage is already in-flight");
 			return false;
 		}
 
@@ -123,11 +125,14 @@ namespace Odyssey.Messaging
 				LogoutMessageInFlight = true;
 				return QueueMessage(new LogoutRequest() { Username = user });
 			}
+
+			Log.Information("[Client::Logout] LogoutMessage is already in-flight");
 			return false;
 		}
 
 		public void Disconnect()
 		{
+			Log.Information("[Client::Disconnect]");
 			tcpClient.Close(); // cancel/join msgReaderTask as well
 			tcpClient.Dispose();
 		}
@@ -145,18 +150,21 @@ namespace Odyssey.Messaging
 					break;
 				}
 
-				if (reader is null)
+				//if (reader is null)
+				//{
+				//	InitMessaging();
+
+				//	if (reader is null)
+				//	{
+				//		Log.Error("[Client::ReadMessageLoop] Message reader is null");
+				//		break;
+				//	}
+				//}
+
+				if (reader is not null)
 				{
-					InitMessaging();
-
-					if (reader is null)
-					{
-						Log.Error("[Client::ReadMessageLoop] Message reader is null");
-						break;
-					}
+					reader.Update();
 				}
-
-				reader.Update();
 			}
 
 			Log.Information("[Client::ReadMessageLoop] Loop terminated");
@@ -176,7 +184,7 @@ namespace Odyssey.Messaging
 
 				if (writer.PendingMessages == 0)
 				{
-					writer.Enqueue(new KeepAliveMessage() { ClientId = ControllingEntity?.Id ?? Guid.Empty, Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds() });
+					//writer.Enqueue(new KeepAliveMessage() { ClientId = ControllingEntity?.Id ?? Guid.Empty, Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds() });
 				}
 
 				writer.Update();

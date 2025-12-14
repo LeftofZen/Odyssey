@@ -36,7 +36,7 @@ namespace Odyssey.Messaging
 
 			// Start listening for client requests.
 
-			clientNegotiatorTask = new Task(ClientLoop);
+			clientNegotiatorTask = new Task(ClientNegotiatorLoop);
 			clientNegotiatorTask.Start();
 
 			return true;
@@ -62,6 +62,13 @@ namespace Odyssey.Messaging
 			{
 				yield return c.ControllingEntity;
 			}
+		}
+
+		public void DisconnectClient(OdysseyClient client)
+		{
+			Logger.Information("[OdysseyServer::DisconnectClient] Disconnecting [{client}]", client.ConnectionDetails);
+			client.Disconnect();
+			clientList.Remove(client);
 		}
 
 		public void Update(GameTime? gameTime)
@@ -113,7 +120,7 @@ namespace Odyssey.Messaging
 			_ = client?.QueueMessage(message);
 		}
 
-		private void ClientLoop()
+		private void ClientNegotiatorLoop()
 		{
 			Logger.Debug("[OdysseyServer::ClientLoop] {negotiatorRun}", negotiatorRun);
 
