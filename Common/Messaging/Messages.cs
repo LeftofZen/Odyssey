@@ -3,25 +3,25 @@ using MessagePack;
 using Microsoft.Xna.Framework.Input;
 
 // TODO - autogenerate this file with source generators https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/
-namespace Odyssey.Messaging.Messages
+namespace Odyssey.Messaging
 {
-	[StructLayout(LayoutKind.Sequential, Pack = 1)]
-	[Serializable]
-	[MessagePackObject(keyAsPropertyName: true)]
-	public struct InputUpdate : IMessage, IClientId
-	{
-		public uint Type => (uint)NetworkMessageType.InputUpdate;
+	//[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	//[Serializable]
+	//[MessagePackObject(keyAsPropertyName: true)]
+	//public struct InputUpdate : IMessage, IClientId
+	//{
+	//	public uint Type => (uint)NetworkMessageType.InputUpdate;
 
-		public MouseState Mouse;
-		public KeyboardState Keyboard;
-		public GamePadState Gamepad;
+	//	public MouseState Mouse;
+	//	public KeyboardState Keyboard;
+	//	public GamePadState Gamepad;
 
-		public long InputTimeUnixMilliseconds;
+	//	public long InputTimeUnixMilliseconds;
 
-		public Guid ClientId { get; init; }
+	//	public Guid ClientId { get; init; }
 
-		public bool RequiresLogin => true;
-	}
+	//	public bool RequiresLogin => true;
+	//}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
@@ -72,6 +72,7 @@ namespace Odyssey.Messaging.Messages
 	public struct LogoutRequest : IMessage
 	{
 		public uint Type => (uint)NetworkMessageType.LogoutRequest;
+		public Guid ClientId { get; init; }
 		public bool RequiresLogin => true;
 		public string Username { get; init; }
 	}
@@ -114,8 +115,8 @@ namespace Odyssey.Messaging.Messages
 	{
 		public uint Type => (uint)NetworkMessageType.KeepAlive;
 		public Guid ClientId { get; init; }
-		public bool RequiresLogin => false;
 		public long Timestamp { get; init; }
+		public bool RequiresLogin => false;
 	}
 
 }

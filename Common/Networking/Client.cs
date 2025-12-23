@@ -2,12 +2,12 @@
 using Messaging.Reading;
 using Messaging.Writing;
 using Odyssey.ECS;
-using Odyssey.Messaging.Messages;
+using Odyssey.Messaging;
 using Serilog;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Odyssey.Messaging
+namespace Odyssey.Networking
 {
 	public class OdysseyClient : IDisposable
 	{
@@ -16,8 +16,8 @@ namespace Odyssey.Messaging
 		public IPEndPoint Endpoint { get; init; }
 
 		public IEntity? ControllingEntity;
-		private MessageStreamWriter<IMessage>? writer;
-		private MessageStreamReader<IMessage>? reader;
+		public MessageStreamWriter<IMessage>? writer;
+		public MessageStreamReader<IMessage>? reader;
 
 		public bool IsLoggedIn { get; set; }
 		public bool LoginMessageInFlight { get; set; }
@@ -40,7 +40,8 @@ namespace Odyssey.Messaging
 			return false;
 		}
 
-		public string ConnectionDetails => $"[{Endpoint.Address}:{Endpoint.Port}] Connected={Connected} LoggedIn={IsLoggedIn}";
+		public string ConnectionDetails
+			=> $"[{Endpoint.Address}:{Endpoint.Port}] Connected={Connected} LoggedIn={IsLoggedIn}";
 
 		public OdysseyClient(IPAddress address, int port)
 		{
@@ -66,7 +67,9 @@ namespace Odyssey.Messaging
 				writer = new MessageStreamWriter<IMessage>(tcpClient.GetStream(), new MessagePackSerialiser());
 				reader = new MessageStreamReader<IMessage>(tcpClient.GetStream(), new MessagePackDeserialiser<NetworkMessageType>(new MessageLookup()));
 
-				msgReaderTask = Task.Run(ReadMessageLoop);
+				//msgReaderTask = Task.Run(ReadMessageLoop);
+				msgReaderTask = new Task(ReadMessageLoop);
+				msgReaderTask.Start();
 			}
 			else
 			{
@@ -153,35 +156,43 @@ namespace Odyssey.Messaging
 
 		private bool readMsgs;
 
+		static int counter;
 		private void ReadMessageLoop()
 		{
 			Log.Debug("[Client::ReadMessageLoop] Client message loop starting {readMsgs}", readMsgs);
-			while (readMsgs)
+			try
 			{
-				if (!tcpClient.Connected)
+				while (readMsgs)
 				{
-					Log.Information("[Client::ReadMessageLoop] Client disconnected from server. Aborting message loop");
-					break;
+					Log.Verbose("[Client::ReadMessageLoop] Loop iteration - Connected={connected}, readMsgs={readMsgs}", tcpClient.Connected, readMsgs);
+					
+					if (!tcpClient.Connected)
+					{
+						Log.Information("[Client::ReadMessageLoop] Client disconnected from server. Aborting message loop");
+						break;
+					}
+
+					if (reader is not null)
+					{
+						Log.Verbose("[Client::ReadMessageLoop] About to call reader.Update()");
+						reader.Update();
+						Log.Verbose("[Client::ReadMessageLoop] reader.Update() completed");
+					}
 				}
 
-				//if (reader is null)
-				//{
-				//	InitMessaging();
-
-				//	if (reader is null)
-				//	{
-				//		Log.Error("[Client::ReadMessageLoop] Message reader is null");
-				//		break;
-				//	}
-				//}
-
-				if (reader is not null)
-				{
-					reader.Update();
-				}
+				Log.Information("[Client::ReadMessageLoop] Loop terminated normally");
 			}
-
-			Log.Information("[Client::ReadMessageLoop] Loop terminated");
+			catch (Exception ex)
+			{
+				Log.Error(ex, "[Client::ReadMessageLoop] Exception in message loop");
+				readMsgs = false;
+				_connected = false;
+				// Optionally trigger disconnect or notify the application
+			}
+			finally
+			{
+				Log.Information("[Client::ReadMessageLoop] Exiting ReadMessageLoop");
+			}
 		}
 
 		public int PendingMessages => writer?.PendingMessages ?? 0;
@@ -206,8 +217,9 @@ namespace Odyssey.Messaging
 				// if we were able to send a message, we are now connected as far as tcp is concerned
 				_connected = true;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				Log.Error(ex, "[Client::FlushMessages] Exception while flushing messages");
 				tcpClient.Close();
 				_connected = false;
 			}
@@ -219,13 +231,8 @@ namespace Odyssey.Messaging
 
 			if (writer is null)
 			{
-				InitMessaging();
-
-				if (writer is null)
-				{
-					Log.Error("[Client::QueueMessage] Message writer is null");
-					return false;
-				}
+				Log.Error("[Client::QueueMessage] Message writer is null");
+				return false;
 			}
 
 			writer.Enqueue(message);

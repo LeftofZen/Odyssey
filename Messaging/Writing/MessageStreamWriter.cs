@@ -8,7 +8,8 @@ namespace Messaging.Writing
 	{
 		private IMessageStreamSerialiser<T> serialiser;
 
-		public MessageStreamWriter(Stream stream, IMessageStreamSerialiser<T> serialiser, int maxMsgSize = DefaultMaxMsgSize) : base(stream, maxMsgSize) => this.serialiser = serialiser;
+		public MessageStreamWriter(Stream stream, IMessageStreamSerialiser<T> serialiser, int maxMsgSize = DefaultMaxMsgSize) 
+			: base(stream, maxMsgSize) => this.serialiser = serialiser;
 
 		public void Enqueue(T msg)
 		{

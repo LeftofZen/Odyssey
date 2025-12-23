@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
 using Odyssey.ECS;
-using Odyssey.Messaging.Messages;
+using Odyssey.Messaging;
 using Serilog;
 
 namespace Odyssey.Entities
@@ -20,7 +20,7 @@ namespace Odyssey.Entities
 
 		public Vector2 Size = new(24, 32);
 		public Vector2 Direction;
-		public float MoveSpeed;
+		public float MoveSpeed = 2f;
 
 		public string DisplayName { get; set; }
 
@@ -53,29 +53,30 @@ namespace Odyssey.Entities
 
 			var speedModifier = 1f;
 
-			if (input.Keyboard.IsKeyDown(Keys.RightShift))
+			var kb = input.Keyboard.ToKeyboardState();
+			if (kb.IsKeyDown(Keys.RightShift))
 			{
 				speedModifier = 4f;
 			}
 
 			var speed = MoveSpeed * speedModifier;
 
-			if (input.Keyboard.IsKeyDown(Keys.Up))
+			if (kb.IsKeyDown(Keys.Up))
 			{
 				_position.Y += -speed;
 			}
 
-			if (input.Keyboard.IsKeyDown(Keys.Down))
+			if (kb.IsKeyDown(Keys.Down))
 			{
 				_position.Y += speed;
 			}
 
-			if (input.Keyboard.IsKeyDown(Keys.Left))
+			if (kb.IsKeyDown(Keys.Left))
 			{
 				_position.X += -speed;
 			}
 
-			if (input.Keyboard.IsKeyDown(Keys.Right))
+			if (kb.IsKeyDown(Keys.Right))
 			{
 				_position.X += speed;
 			}

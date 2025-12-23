@@ -10,6 +10,12 @@ namespace Messaging.Reading
 		{
 			if (DelimitedMessageQueue.TryDequeue(out var bmsg))
 			{
+				if (bmsg.hdr.Type == 0)
+				{
+					dmsg = default;
+					return false;
+				}
+
 				dmsg = (bmsg.hdr, deserialiser.Deserialise(bmsg.hdr, bmsg.msg));
 				return true;
 			}

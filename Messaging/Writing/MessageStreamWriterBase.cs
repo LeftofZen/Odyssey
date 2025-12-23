@@ -24,6 +24,12 @@ namespace Messaging.Writing
 			var a = BitConverter.GetBytes(type);
 			var b = BitConverter.GetBytes(msg.Length);
 
+			if (!bs.CanWrite)
+			{
+				Log.Error($"[MessageStreamWriterBase::Enqueue] Stream cannot write. Message {type} lost");
+				return;
+			}
+
 			bs.Write(a);
 			bs.Write(b);
 			bs.Write(msg);

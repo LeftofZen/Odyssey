@@ -1,5 +1,5 @@
 ﻿using Odyssey.Messaging;
-using Odyssey.Messaging.Messages;
+using Odyssey.Networking;
 using System.Diagnostics;
 
 namespace Network

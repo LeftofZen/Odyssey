@@ -7,12 +7,13 @@ using MonoGame.ImGuiNet;
 using Odyssey.Entities;
 using Odyssey.Logging;
 using Odyssey.Messaging;
-using Odyssey.Messaging.Messages;
+using Odyssey.Networking;
 using Odyssey.Render;
 using Odyssey.World;
 using Serilog;
 using Serilog.Exceptions;
 using System;
+using System.Threading;
 
 namespace Odyssey.Client
 {
@@ -154,7 +155,7 @@ namespace Odyssey.Client
 					client.ControllingEntity = player;
 					client.LoginMessageInFlight = false;
 					client.IsLoggedIn = true;
-					Logger.Information("[ClientProcess::NetworkReceive] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
+					Logger.Information("[ClientProcess::NetworkReceive][LoginResponse] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
 				}
 
 				if (dmsg.msg is LogoutResponse)
@@ -165,7 +166,12 @@ namespace Odyssey.Client
 					client.ControllingEntity = null;
 					client.LogoutMessageInFlight = false;
 					client.IsLoggedIn = false;
-					Logger.Information("[ClientProcess::NetworkReceive] \"{player}\" logged out with {id}", player.DisplayName, oldId);
+					Logger.Information("[ClientProcess::NetworkReceive][LogoutResponse] \"{player}\" logged out with {id}", player.DisplayName, oldId);
+				}
+
+				if (dmsg.msg is ChatMessage chatMessage)
+				{
+					Logger.Information($"[ClientProcess::NetworkReceive][Chat][{chatMessage.ClientId}] {chatMessage.Message}");
 				}
 			}
 
@@ -187,6 +193,8 @@ namespace Odyssey.Client
 			}
 		}
 
+		static int count = 0;
+
 		private void NetworkSend()
 		{
 			if (client?.Connected != true)
@@ -198,9 +206,9 @@ namespace Odyssey.Client
 
 			var clientInput = new InputUpdate()
 			{
-				Mouse = Mouse.GetState(),
-				Keyboard = Keyboard.GetState(),
-				Gamepad = GamePad.GetState(PlayerIndex.One),
+				Mouse = MouseInputData.FromMouseState(Mouse.GetState()),
+				Keyboard = KeyboardInputData.FromKeyboardState(Keyboard.GetState()),
+				Gamepad = GamePadInputData.FromGamePadState(GamePad.GetState(PlayerIndex.One)),
 				InputTimeUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
 				ClientId = player.Id,
 			};
@@ -216,7 +224,7 @@ namespace Odyssey.Client
 				}
 			}
 
-			if (client.PendingMessages == 0)
+			if (client.PendingMessages == 0 && (count++ % 60) == 0) // once per second
 			{
 				Logger.Debug("[ClientProcess::NetworkSend] No pending messages, will send keepalive instead");
 				_ = client.QueueMessage(new KeepAliveMessage() { ClientId = Id, Timestamp = DateTime.Now.Ticks });

@@ -1,9 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Odyssey.ECS;
+using Odyssey.Messaging;
 using Serilog;
 using System.Net.Sockets;
 
-namespace Odyssey.Messaging
+namespace Odyssey.Networking
 {
 	public class OdysseyServer
 	{
@@ -50,7 +51,7 @@ namespace Odyssey.Messaging
 			{
 				while (client.TryDequeueMessage(out var dmsg))
 				{
-					Logger.Information("[OdysseyServer::GetServerMessages] {msgType}", dmsg.hdr.Type);
+					Logger.Verbose("[OdysseyServer::GetServerMessages] {msgType}", dmsg.hdr.Type);
 					yield return (client, dmsg.msg);
 				}
 			}

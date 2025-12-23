@@ -3,6 +3,7 @@
 	public enum NetworkMessageType
 	{
 		#region Server-Specific
+		NULL = 0,
 		LoginResponse,
 		LogoutResponse,
 		WorldUpdate,

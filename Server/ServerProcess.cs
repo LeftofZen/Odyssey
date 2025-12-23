@@ -8,7 +8,7 @@ using MonoGame.ImGuiNet;
 using Odyssey.Entities;
 using Odyssey.Logging;
 using Odyssey.Messaging;
-using Odyssey.Messaging.Messages;
+using Odyssey.Networking;
 using Odyssey.Noise;
 using Odyssey.World;
 using Serilog;
@@ -16,6 +16,7 @@ using Serilog.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace Odyssey.Server
@@ -43,7 +44,7 @@ namespace Odyssey.Server
 
 		private ImGuiRenderer GuiRenderer;
 
-		public Vector2 clientMousePos = Vector2.Zero;
+		//public Vector2 clientMousePos = Vector2.Zero;
 
 		public ServerProcess()
 		{
@@ -159,9 +160,17 @@ namespace Odyssey.Server
 			{
 				if (msg is InputUpdate networkMsg)
 				{
+					if (!client.IsLoggedIn)
+					{
+						Logger.Warning($"[NetworkReceive] Client \"{client.ConnectionDetails}\" not logged in");
+						continue;
+					}
+
 					Logger.Debug("[NetworkInput Message] {time} {x} {y}", networkMsg.InputTimeUnixMilliseconds, networkMsg.Mouse.X, networkMsg.Mouse.Y);
-					clientMousePos = new Vector2(networkMsg.Mouse.X, networkMsg.Mouse.Y);
+					//
+					//client.ControllingEntity.Position = new Vector2(networkMsg.Mouse.X, networkMsg.Mouse.Y);
 					// input handling above, everything else below
+					
 					var entity = gameState.Entities.Where(e => e.Id == networkMsg.ClientId).Single();
 					((Player)entity).Update(networkMsg, gameTime);
 				}
@@ -180,16 +189,20 @@ namespace Odyssey.Server
 					// var player = db.LoadPlayer(loginMsg.Username, loginMsg.Password);
 					// for now we'll just always force-make a new player
 					var uid = Guid.NewGuid();
-					client.ControllingEntity = new Player() { Username = loginMsg.Username, Password = loginMsg.Password, Id = uid };
-					client.IsLoggedIn = true;
-
-					Logger.Information("[NetworkReceive] Player logged in: {user}", loginMsg.Username);
+					var newEntity = new Player() { Username = loginMsg.Username, Password = loginMsg.Password, Id = uid, DisplayName = loginMsg.Username };
+					client.ControllingEntity = newEntity;
+					gameState.Entities.Add(newEntity);
 
 					_ = client.QueueMessage(new LoginResponse() { ClientId = uid });
+
+					Logger.Information("[NetworkReceive] Player logged in: {user}", loginMsg.Username);
+					client.IsLoggedIn = true;
 				}
 
 				if (msg is LogoutRequest logoutMsg)
 				{
+					_ = client.QueueMessage(new LogoutResponse() { ClientId = logoutMsg.ClientId });
+
 					Logger.Information("[NetworkReceive] Player logged out: {user}", logoutMsg.Username);
 					client.IsLoggedIn = false;
 				}
@@ -215,7 +228,7 @@ namespace Odyssey.Server
 				EntityRenderer.Draw(sb, e, scale);
 			}
 
-			sb.DrawPoint(clientMousePos, Color.White, 3f);
+			//sb.DrawPoint(clientMousePos, Color.White, 3f);
 
 			sb.End();
 
@@ -235,17 +248,36 @@ namespace Odyssey.Server
 			base.Draw(gameTime);
 		}
 
+		static int counter = 0;
 		public void RenderImGui()
 		{
+			ImGui.Text(counter++.ToString());
+
 			ImGui.Text($"Clients={server.ClientCount}");
 			var disconnectList = new List<OdysseyClient>();
 			foreach (var c in server.Clients)
 			{
 				ImGui.BulletText(c.ConnectionDetails);
+				ImGui.Bullet();
+				ImGui.SliderInt("ptrStart", ref c.reader.ptrStart, 0, 1024);
+				ImGui.Bullet();
+				ImGui.SliderInt("ptrEnd", ref c.reader.ptrEnd, 0, 1024);
+				if (c.ControllingEntity != null)
+				{
+					ImGui.BulletText($"{c.ControllingEntity.DisplayName}");
+					ImGui.BulletText($"{c.ControllingEntity.Position}");
+					ImGui.BulletText($"{c.ControllingEntity.Velocity}");
+					ImGui.BulletText($"{c.ControllingEntity.Acceleration}");
+				}
 
 				if (ImGui.Button("Disconnect"))
 				{
 					disconnectList.Add(c);
+				}
+
+				if (ImGui.Button("Send chat"))
+				{
+					_ = c.QueueMessage(new ChatMessage() { Message = "Hello from the server!" });
 				}
 			}
 
