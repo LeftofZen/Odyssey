@@ -37,15 +37,18 @@ namespace Odyssey.Logging
 	{
 		public static void Draw(InMemorySink sink, SpriteBatch sb, int x, int y)
 		{
-			sb.FillRectangle(0, 0, sb.GraphicsDevice.Viewport.Width, 216, new Color(Colours.Wizard, 0.9f));
+			sb.FillRectangle(x, y, sb.GraphicsDevice.Viewport.Width, 216, new Color(Colours.Wizard, 0.8f));
 
-			var yInc = y;
+			var textOffsetX = 10;
+			var textOffsetY = 10;
+
+			var yInc = 0;
 			// logs
 			//foreach (var log in sink.Events.TakeLast(20).Reverse())
 			foreach (var log in sink.Events.TakeLast(10))
 			{
 				//DrawLogLine(log, sb, GameServices.Fonts["Calibri"], x, y);
-				var renderedStringSize = RenderLine(log, sb, GameServices.Fonts["Calibri"], new Vector2(x, yInc));
+				var renderedStringSize = RenderLine(log, sb, GameServices.Fonts["Calibri"], new Vector2(x + textOffsetX, y + textOffsetY + yInc));
 				yInc += 20;
 			}
 		}
@@ -56,8 +59,9 @@ namespace Odyssey.Logging
 			{
 				return Vector2.Zero;
 			}
+
 			var timestamp = logEvent.Timestamp.ToString();
-			sb.DrawDebugStringLeftAligned(font, timestamp, pos, Colours.JuneBud, 1);
+			sb.DrawDebugStringLeftAligned(font, timestamp, pos, Colours.PureApple, 1);
 			pos += font.MeasureString(timestamp).SetY(0);
 
 			foreach (var token in logEvent.MessageTemplate.Tokens)
@@ -72,6 +76,7 @@ namespace Odyssey.Logging
 					pos += RenderPropertyToken(pt, logEvent.Properties, sb, font, pos).SetY(0);
 				}
 			}
+
 			return pos;
 		}
 
@@ -100,7 +105,7 @@ namespace Odyssey.Logging
 				if (propertyValue is ScalarValue sv)
 				{
 					var s1 = $"{pt.PropertyName}=";
-					sb.DrawDebugStringLeftAligned(font, s1, pos, Colours.HintOfIce, 1);
+					sb.DrawDebugStringLeftAligned(font, s1, pos, Colours.ExodusFruit, 1);
 					var l1 = font.MeasureString(s1);
 
 					sb.DrawDebugStringLeftAligned(font, propertyValue.ToString(), pos + l1.SetY(0), Colours.CarminePink, 1);

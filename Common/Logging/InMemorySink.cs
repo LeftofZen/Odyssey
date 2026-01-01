@@ -18,6 +18,7 @@ namespace Odyssey.Logging
 			{
 				throw new ArgumentNullException(nameof(logEvent));
 			}
+
 			Events.Enqueue(logEvent);
 		}
 	}

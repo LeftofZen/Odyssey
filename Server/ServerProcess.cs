@@ -31,8 +31,8 @@ namespace Odyssey.Server
 
 		private GameState gameState;
 
-		private const int initialMapWidth = 32;
-		private const int initialMapHeight = 32;
+		private const int initialMapWidth = 128;
+		private const int initialMapHeight = 128;
 		private const int tileSize = 32;
 		private NoiseParams NoiseSettings { get; } = new NoiseParams();
 		private NoiseParams PreviousNoiseSettings { get; set; } = new NoiseParams();
@@ -49,8 +49,8 @@ namespace Odyssey.Server
 
 			graphics = new GraphicsDeviceManager(this)
 			{
-				PreferredBackBufferWidth = 1080,
-				PreferredBackBufferHeight = 768
+				PreferredBackBufferWidth = 1920,
+				PreferredBackBufferHeight = 1080
 			};
 
 			Content.RootDirectory = "Content";
@@ -93,21 +93,12 @@ namespace Odyssey.Server
 			GuiRenderer.RebuildFontAtlas();
 
 			// world
-			NoiseSettings.NoiseSize = 32;
+			NoiseSettings.NoiseSizeX = initialMapWidth;
+			NoiseSettings.NoiseSizeY = initialMapHeight;
 			gameState.Map = new Map(initialMapWidth, initialMapHeight, NoiseHelpers.CreateNoise2D(NoiseSettings))
 			{
 				TileSize = 32
 			};
-
-			// character
-			//player.Position = new Vector2(map.Width * tileSize / 2, map.Height * tileSize / 2);
-			//var player = new Player
-			//{
-			//	Id = Guid.NewGuid(),
-			//	Position = new Vector2(100, 100),
-			//	MoveSpeed = 4f,
-			//};
-			//gameState.Entities.Add(player);
 
 			_ = server.Start();
 
@@ -144,13 +135,20 @@ namespace Odyssey.Server
 
 		private void NetworkSend()
 		{
-			//server.SendMessageToAllClients(new WorldUpdate() { /*Map = map*/ });
+			var worldUpdate = new WorldUpdate()
+			{
+				Width = gameState.Map.Width,
+				Height = gameState.Map.Height,
+				TileSize = gameState.Map.TileSize,
+				Map = gameState.Map.GetData()
+			};
+			server.SendMessageToAllClients(new GameStateUpdate() { GameState = worldUpdate });
 
 			// foreach client, send the player info to each other client
-			foreach (var e in gameState.Entities)
-			{
+			//foreach (var e in gameState.Entities)
+			//{
 				//server.SendMessageToAllClientsExcept(new PlayerUpdate() { /*Position = player.Position*/ }, e);
-			}
+			//}
 		}
 
 		private void NetworkReceive(GameTime gameTime)
@@ -220,8 +218,10 @@ namespace Odyssey.Server
 
 			sb.Begin();
 
-			var scale = 1f / 4f;
-			MapRenderer.Draw(sb, gameState.Map, (int)(tileSize * scale));
+			var xOffset = 128;
+			var yOffset = 256;
+			var scale = 1f / 8f;
+			MapRenderer.Draw(sb, gameState.Map, xOffset, yOffset, (int)(tileSize * scale));
 
 			foreach (var e in gameState.Entities)
 			{
@@ -236,7 +236,7 @@ namespace Odyssey.Server
 
 			if (renderLog)
 			{
-				InMemorySinkRenderer.Draw(logsink, sb, 10, 10);
+				InMemorySinkRenderer.Draw(logsink, sb, 0, 0);
 			}
 
 			sb.End();

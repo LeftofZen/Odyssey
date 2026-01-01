@@ -8,7 +8,7 @@ namespace Odyssey.World
 		public int Width { get; set; } = 0;
 		public int Height { get; set; } = 0;
 		public int TileSize { get; set; } = 0;
-		private Tile[,] Data { get; set; } = null;
+		public Tile[,] Data { get; private set; } = null;
 		public int[,] Trees = null; // -1 = no tree, 0->infinity = tree id
 
 		public bool DrawNoiseOnly = true;
@@ -49,6 +49,19 @@ namespace Odyssey.World
 
 		public Map(int width, int height, double[,] data) : this(width, height) => SetData(data);
 		public Map(double[,] data) => SetData(data);
+
+		public double[,] GetData()
+		{
+			var result = new double[Width, Height];
+			for (var y = 0; y < Height; y++)
+			{
+				for (var x = 0; x < Width; x++)
+				{
+					result[x, y] = Data[x, y].Value;
+				}
+			}
+			return result;
+		}
 
 		public void SetData(double[,] data)
 		{

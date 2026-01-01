@@ -8,6 +8,7 @@
 		LogoutResponse,
 		WorldUpdate,
 		PlayerUpdate,
+		GameStateUpdate,
 		Broadcast,
 		#endregion
 
@@ -22,5 +23,4 @@
 		KeepAlive,
 		#endregion
 	}
-
 }

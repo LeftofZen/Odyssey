@@ -1,5 +1,6 @@
-﻿using System.Runtime.InteropServices;
-using MessagePack;
+﻿using MessagePack;
+using Odyssey.World;
+using System.Runtime.InteropServices;
 
 // TODO - autogenerate this file with source generators https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/
 namespace Odyssey.Messaging
@@ -29,6 +30,21 @@ namespace Odyssey.Messaging
 	{
 		public uint Type => (uint)NetworkMessageType.WorldUpdate;
 		public bool RequiresLogin => false;
+
+		public int Width { get; init; }
+		public int Height { get; init; }
+		public int TileSize { get; init; }
+		public double[,] Map { get; init; } // basically just a heightmap
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack = 1)]
+	[Serializable]
+	[MessagePackObject(keyAsPropertyName: true)]
+	public struct GameStateUpdate : IMessage
+	{
+		public uint Type => (uint)NetworkMessageType.GameStateUpdate;
+		public bool RequiresLogin => false;
+		public WorldUpdate GameState { get; init; }
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -117,5 +133,4 @@ namespace Odyssey.Messaging
 		public long Timestamp { get; init; }
 		public bool RequiresLogin => false;
 	}
-
 }

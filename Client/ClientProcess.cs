@@ -28,8 +28,8 @@ namespace Odyssey.Client
 		private bool renderLog = true;
 
 		// game state
-		public Map map;
 		public Player player;
+		public GameState gameState;
 
 		// rendering
 		private ImGuiRenderer GuiRenderer;
@@ -132,6 +132,7 @@ namespace Odyssey.Client
 			{
 				camera.Follow(player.Position);
 			}
+
 			camera.UpdateCamera(GraphicsDevice.Viewport);
 
 			base.Update(gameTime);
@@ -172,8 +173,15 @@ namespace Odyssey.Client
 				{
 					Logger.Information($"[ClientProcess::NetworkReceive][Chat][{chatMessage.ClientId}] {chatMessage.Message}");
 				}
-			}
 
+				if (dmsg.msg is GameStateUpdate gameStateUpdate)
+				{
+					// copy map
+					var world = gameStateUpdate.GameState;
+					gameState.Map.SetData(world.Map);
+					Logger.Information("[ClientProcess::NetworkReceive][GameStateUpdate] received new game state with {numEntities} entities", gameState.Entities.Count);
+				}
+			}
 		}
 
 		public void Login()
@@ -239,14 +247,14 @@ namespace Odyssey.Client
 			sb.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null, camera.Transform);
 
 			// draw world
-			if (map.IsInitialised)
+			if (gameState.Map.IsInitialised)
 			{
-				map.Draw(sb, gameTime, camera);
+				gameState.Map.Draw(sb, gameTime, camera);
 
 				// draw highlighted tile
 				var mousePos = Mouse.GetState().Position.ToVector2();
 				mousePos = Render.ScreenToWorldSpace(mousePos, camera.Transform);
-				Render.DrawTileAlignedBox(sb, mousePos, map.TileSize, Color.Yellow, map.TileSize);
+				Render.DrawTileAlignedBox(sb, mousePos, gameState.Map.TileSize, Color.Yellow, gameState.Map.TileSize);
 			}
 
 			// draw animals
@@ -265,13 +273,12 @@ namespace Odyssey.Client
 			if (player != null)
 			{
 				player.Draw(sb, gameTime);
-				Render.DrawTileAlignedBox(sb, player.Position, map.TileSize, Color.Red, map.TileSize);
+				Render.DrawTileAlignedBox(sb, player.Position, gameState.Map.TileSize, Color.Red, gameState.Map.TileSize);
 				Render.DrawBoundingBox(sb, player);
 				if (camera.Zoom >= 1)
 				{
 					sb.DrawDebugStringCentered(GameServices.Fonts["Calibri"], player.DisplayName, player.Position - new Vector2(0, player.Size.Y / 2), Color.White);
 				}
-
 			}
 
 			if (client != null)
@@ -311,7 +318,7 @@ namespace Odyssey.Client
 
 			if (renderLog)
 			{
-				InMemorySinkRenderer.Draw(logsink, sb, 10, 10);
+				InMemorySinkRenderer.Draw(logsink, sb, 0, 0);
 			}
 
 			sb.End();
@@ -334,10 +341,12 @@ namespace Odyssey.Client
 			{
 				ConnectToServer();
 			}
+
 			if (ImGui.Button("Disconnect"))
 			{
 				DisconnectFromServer();
 			}
+
 			if (ImGui.Button("Clear Logs"))
 			{
 				ClearLogs();
@@ -349,6 +358,7 @@ namespace Odyssey.Client
 				{
 					Login();
 				}
+
 				if (ImGui.Button("Logout"))
 				{
 					Logout();

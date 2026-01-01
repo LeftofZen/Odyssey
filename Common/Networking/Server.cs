@@ -85,7 +85,7 @@ namespace Odyssey.Networking
 
 		public void SendMessageToAllClients<T>(T message) where T : struct, IMessage
 		{
-			Logger.Debug("[OdysseyServer::SendMessageToAllClients]");
+			Logger.Verbose("[OdysseyServer::SendMessageToAllClients]");
 
 			foreach (var c in clientList)
 			{
@@ -98,7 +98,7 @@ namespace Odyssey.Networking
 
 		public void SendMessageToAllClientsExcept<T>(T message, IEntity exceptedEntity) where T : struct, IMessage
 		{
-			Logger.Debug("[OdysseyServer::SendMessageToAllClientsExcept]");
+			Logger.Verbose("[OdysseyServer::SendMessageToAllClientsExcept]");
 
 			foreach (var c in clientList)
 			{
@@ -114,7 +114,7 @@ namespace Odyssey.Networking
 
 		public void SendMessageToClient<T>(Guid id, T message) where T : struct, IMessage
 		{
-			Logger.Debug("[OdysseyServer::SendMessageToClient]");
+			Logger.Verbose("[OdysseyServer::SendMessageToClient]");
 
 			var client = clientList.SingleOrDefault(c => c.ControllingEntity.Id == id);
 			_ = client?.QueueMessage(message);
@@ -122,7 +122,7 @@ namespace Odyssey.Networking
 
 		private void ClientNegotiatorLoop()
 		{
-			Logger.Debug("[OdysseyServer::ClientLoop] {negotiatorRun}", negotiatorRun);
+			Logger.Verbose("[OdysseyServer::ClientLoop] {negotiatorRun}", negotiatorRun);
 
 			clientNegotiator.Start();
 			while (negotiatorRun)

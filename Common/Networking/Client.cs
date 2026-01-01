@@ -83,7 +83,7 @@ namespace Odyssey.Networking
 
 			try
 			{
-				bool isConnected = false;
+				var isConnected = false;
 				try
 				{
 					isConnected = tcpClient.Connected;
@@ -106,6 +106,7 @@ namespace Odyssey.Networking
 
 					InitMessaging();
 				}
+
 				return true;
 			}
 			catch (Exception ex)

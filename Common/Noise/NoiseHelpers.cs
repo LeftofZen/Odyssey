@@ -32,7 +32,7 @@
 		public static double[,] CreateNoise2D(NoiseParams noiseSettings)
 		{
 			var noise = new OpenSimplexNoise(noiseSettings.Seed);
-			var data = new double[noiseSettings.NoiseSize, noiseSettings.NoiseSize];
+			var data = new double[noiseSettings.NoiseSizeX, noiseSettings.NoiseSizeY];
 			for (var y = 0; y < data.GetLength(1); y++)
 			{
 				for (var x = 0; x < data.GetLength(0); x++)

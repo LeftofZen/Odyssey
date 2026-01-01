@@ -14,6 +14,7 @@
 			{ (uint)NetworkMessageType.ChatMessage, typeof(ChatMessage) },
 			{ (uint)NetworkMessageType.Broadcast, typeof(BroadcastMessage) },
 			{ (uint)NetworkMessageType.KeepAlive, typeof(KeepAliveMessage) },
+			{ (uint)NetworkMessageType.GameStateUpdate, typeof(GameStateUpdate) },
 		};
 
 		static readonly Dictionary<Type, NetworkMessageType> _ToNetwork = new()
@@ -28,6 +29,7 @@
 			{ typeof(ChatMessage), NetworkMessageType.ChatMessage },
 			{ typeof(BroadcastMessage), NetworkMessageType.Broadcast },
 			{ typeof(KeepAliveMessage), NetworkMessageType.KeepAlive },
+			{ typeof(GameStateUpdate), NetworkMessageType.GameStateUpdate },
 		};
 
 		public IDictionary<uint, Type> ToType
@@ -36,5 +38,4 @@
 		public IDictionary<Type, NetworkMessageType> ToNetwork
 			=> _ToNetwork;
 	}
-
 }

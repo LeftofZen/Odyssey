@@ -39,7 +39,7 @@ namespace Odyssey.Client
 			if (safeCamera.Contains(dstRect))
 			{
 				//sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, Data[x, y].Colour);
-				var grey = (float)(map.At(x, y).value / 2.0 + 0.5);
+				var grey = (float)(map.At(x, y).Value / 2.0 + 0.5);
 				sb.Draw(GameServices.Textures["terrain"], dstRect, srcRect, new Color(grey, grey, grey));
 			}
 

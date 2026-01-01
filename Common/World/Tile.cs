@@ -10,22 +10,15 @@ namespace Odyssey.World
 		{
 			set
 			{
-				this.value = value;
-				if (UseColourMap)
-				{
-					Colour = ColourMap[Map(value)];
-				}
-				else
-				{
-					Colour = new Color((float)value, (float)value, (float)value);
-				}
+				field = value;
+				Colour = UseColourMap ? ColourMap[Map(value)] : new Color((float)value, (float)value, (float)value);
 			}
+			get => field;
 		}
-		public double value;
 
 		public bool UseColourMap { get; set; }
 
-		public Rectangle MapRect => SpriteMap[Map(value)];
+		public Rectangle MapRect => SpriteMap[Map(Value)];
 
 		public static TileType Map(double value)
 		{
