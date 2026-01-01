@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 using MessagePack;
 using Microsoft.Xna.Framework.Input;

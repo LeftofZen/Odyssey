@@ -13,7 +13,6 @@ using Odyssey.World;
 using Serilog;
 using Serilog.Exceptions;
 using System;
-using System.Threading;
 
 namespace Odyssey.Client
 {

@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MonoGame.Extended;
 using MonoGame.Extended.Input;
 using MonoGame.ImGuiNet;
 using Odyssey.Entities;
@@ -16,8 +15,6 @@ using Serilog.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace Odyssey.Server
 {
@@ -125,6 +122,9 @@ namespace Odyssey.Server
 
 		protected override void Update(GameTime gameTime)
 		{
+			MouseExtended.Update();
+			KeyboardExtended.Update();
+
 			var kb = KeyboardExtended.GetState();
 			if (kb.WasKeyReleased(Keys.OemTilde))
 			{
@@ -248,11 +248,8 @@ namespace Odyssey.Server
 			base.Draw(gameTime);
 		}
 
-		static int counter = 0;
 		public void RenderImGui()
 		{
-			ImGui.Text(counter++.ToString());
-
 			ImGui.Text($"Clients={server.ClientCount}");
 			var disconnectList = new List<OdysseyClient>();
 			foreach (var c in server.Clients)

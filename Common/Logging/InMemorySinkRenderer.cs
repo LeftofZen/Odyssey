@@ -9,11 +9,35 @@ namespace Odyssey.Logging
 {
 	//public record RenderParams(SpriteBatch sb, SpriteFont font, int x, int y);
 
+	public static class Colours
+	{
+		public static readonly Color Beekeeper = new(246, 229, 141);
+		public static readonly Color SpicedNectarine = new(255, 190, 118);
+		public static readonly Color PinkGlamour = new(255, 121, 121);
+		public static readonly Color JuneBud = new(186, 220, 88);
+		public static readonly Color Coastal = new(223, 249, 251);
+		public static readonly Color Turbo = new(249, 202, 36);
+		public static readonly Color QuinceJelly = new(240, 147, 43);
+		public static readonly Color CarminePink = new(235, 77, 75);
+		public static readonly Color PureApple = new(106, 176, 76);
+		public static readonly Color HintOfIce = new(199, 236, 238);
+		public static readonly Color MiddleBlue = new(126, 214, 223);
+		public static readonly Color Heliotrope = new(224, 86, 253);
+		public static readonly Color ExodusFruit = new(104, 109, 224);
+		public static readonly Color DeepKoamaru = new(48, 51, 107);
+		public static readonly Color Soaring = new(149, 175, 192);
+		public static readonly Color GreenlandGreen = new(34, 166, 179);
+		public static readonly Color SteelPink = new(190, 46, 221);
+		public static readonly Color Blurple = new(72, 52, 212);
+		public static readonly Color DeepCove = new(19, 15, 64);
+		public static readonly Color Wizard = new(83, 92, 104);
+	}
+
 	public static class InMemorySinkRenderer
 	{
 		public static void Draw(InMemorySink sink, SpriteBatch sb, int x, int y)
 		{
-			sb.FillRectangle(0, 0, sb.GraphicsDevice.Viewport.Width, 216, new Color(Color.DarkGray, 0.5f));
+			sb.FillRectangle(0, 0, sb.GraphicsDevice.Viewport.Width, 216, new Color(Colours.Wizard, 0.9f));
 
 			var yInc = y;
 			// logs
@@ -33,7 +57,7 @@ namespace Odyssey.Logging
 				return Vector2.Zero;
 			}
 			var timestamp = logEvent.Timestamp.ToString();
-			sb.DrawDebugStringLeftAligned(font, timestamp, pos, Color.Firebrick, 1);
+			sb.DrawDebugStringLeftAligned(font, timestamp, pos, Colours.JuneBud, 1);
 			pos += font.MeasureString(timestamp).SetY(0);
 
 			foreach (var token in logEvent.MessageTemplate.Tokens)
@@ -55,7 +79,7 @@ namespace Odyssey.Logging
 		{
 			//using (_theme.Apply(output, ConsoleThemeStyle.Text, ref count))
 			//	output.Write(tt.Text);
-			sb.DrawDebugStringLeftAligned(font, tt.Text, pos, Color.CornflowerBlue, 1);
+			sb.DrawDebugStringLeftAligned(font, tt.Text, pos, Colours.Turbo, 1);
 
 			return font.MeasureString(tt.Text);
 		}
@@ -66,7 +90,7 @@ namespace Odyssey.Logging
 			{
 				//using (_theme.Apply(output, ConsoleThemeStyle.Invalid, ref count))
 				//	output.Write(pt.ToString());
-				sb.DrawDebugStringLeftAligned(font, pt.ToString(), pos, Color.LawnGreen, 1);
+				sb.DrawDebugStringLeftAligned(font, pt.ToString(), pos, Colours.QuinceJelly, 1);
 				return font.MeasureString(pt.ToString());
 			}
 
@@ -76,10 +100,10 @@ namespace Odyssey.Logging
 				if (propertyValue is ScalarValue sv)
 				{
 					var s1 = $"{pt.PropertyName}=";
-					sb.DrawDebugStringLeftAligned(font, s1, pos, Color.Gray, 1);
+					sb.DrawDebugStringLeftAligned(font, s1, pos, Colours.HintOfIce, 1);
 					var l1 = font.MeasureString(s1);
 
-					sb.DrawDebugStringLeftAligned(font, propertyValue.ToString(), pos + l1.SetY(0), Color.Aquamarine, 1);
+					sb.DrawDebugStringLeftAligned(font, propertyValue.ToString(), pos + l1.SetY(0), Colours.CarminePink, 1);
 					var l2 = font.MeasureString(propertyValue.ToString());
 
 					return l1 + l2;
@@ -144,26 +168,5 @@ namespace Odyssey.Logging
 
 		//	return valueFormatter.Format(propertyValue, output, format, _isLiteral);
 		//}
-
-		public static void DrawLogLine(LogEvent log, SpriteBatch sb, SpriteFont font, int x, int y)
-		{
-			//log.
-			var pos = new Vector2(x, y);
-			foreach (var property in log.Properties)
-			{
-				var s = property.Key + "_" + property.Value;
-				var l = font.MeasureString(s);
-				sb.DrawDebugStringLeftAligned(font, s, pos, Color.CornflowerBlue, 1);
-				pos = new Vector2(pos.X + l.X, pos.Y);
-			}
-
-			//var l1 = font.MeasureString(log.initialTime.ToString());
-			//var l2 = font.MeasureString(log.message);
-			//var l3 = font.MeasureString(log.millisondsToDisplay.ToString());
-
-			//Render.String.DrawDebugStringLeftAligned(sb, font, log.initialTime.ToString(), new Vector2(x, y), Color.Black, 1);
-			//Render.String.DrawDebugStringLeftAligned(sb, font, log.message, new Vector2(x + l1.X, y), Color.WhiteSmoke, 1);
-			//Render.String.DrawDebugStringLeftAligned(sb, font, log.millisondsToDisplay.ToString(), new Vector2(x + l1.X + l2.X, y), Color.CornflowerBlue, 1);
-		}
 	}
 }
