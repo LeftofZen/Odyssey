@@ -42,6 +42,7 @@ namespace Messaging.Reading
 			Log.Verbose("[MessageStreamReaderBase::UpdateInternal]");
 
 			// Read from the pipe
+			// Note: Using .Result to maintain synchronous API contract
 			var readResult = pipeReader.ReadAsync().AsTask().Result;
 			var buffer = readResult.Buffer;
 
@@ -75,11 +76,6 @@ namespace Messaging.Reading
 
 			// Tell the PipeReader how much of the buffer we consumed
 			pipeReader.AdvanceTo(consumed, examined);
-
-			if (readResult.IsCompleted)
-			{
-				Log.Information("[MessageStreamReaderBase::UpdateInternal] PipeReader completed");
-			}
 		}
 
 		private bool TryReadMessage(ReadOnlySequence<byte> buffer, out SequencePosition position, out Header header, out byte[] messageBytes)
