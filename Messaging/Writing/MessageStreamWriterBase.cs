@@ -8,7 +8,7 @@ namespace Messaging.Writing
 		public int MaxMsgSize { get; init; }
 		public const int DefaultMaxMsgSize = 1024;
 
-		private PipeWriter pipeWriter;
+		private readonly PipeWriter pipeWriter;
 		private bool disposed = false;
 
 		public int PendingMessages { get; private set; } = 0;
