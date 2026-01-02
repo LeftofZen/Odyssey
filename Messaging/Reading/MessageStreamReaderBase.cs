@@ -7,9 +7,10 @@ using System.IO.Pipelines;
 namespace Messaging.Reading
 {
 
-	public class MessageStreamReaderBase
+	public class MessageStreamReaderBase : IDisposable
 	{
 		private readonly PipeReader pipeReader;
+		private bool disposed = false;
 
 		public int MaxMsgSize { get; init; }
 		public const int DefaultMaxMsgSize = 1024;
@@ -19,7 +20,7 @@ namespace Messaging.Reading
 		public MessageStreamReaderBase(Stream stream, int maxMsgSize = DefaultMaxMsgSize)
 		{
 			MaxMsgSize = maxMsgSize;
-			pipeReader = PipeReader.Create(stream);
+			pipeReader = PipeReader.Create(stream, new StreamPipeReaderOptions(leaveOpen: true));
 		}
 
 		public void Update()
@@ -123,6 +124,26 @@ namespace Messaging.Reading
 			// Return the position after this message
 			position = buffer.GetPosition(totalMessageSize);
 			return true;
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposed)
+			{
+				if (disposing)
+				{
+					// Complete the PipeReader to release any resources
+					// This does not dispose the underlying stream as we specified leaveOpen: true
+					pipeReader.Complete();
+				}
+				disposed = true;
+			}
 		}
 	}
 }
