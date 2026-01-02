@@ -42,8 +42,8 @@ namespace Messaging.Reading
 			Log.Verbose("[MessageStreamReaderBase::UpdateInternal]");
 
 			// Read from the pipe
-			// Note: Using .Result to maintain synchronous API contract
-			var readResult = pipeReader.ReadAsync().AsTask().Result;
+			// Note: Using GetAwaiter().GetResult() to maintain synchronous API contract while avoiding .Result deadlock risks
+			var readResult = pipeReader.ReadAsync().AsTask().GetAwaiter().GetResult();
 			var buffer = readResult.Buffer;
 
 			Log.Verbose("[MessageStreamReaderBase::UpdateInternal] Read buffer with {bytes} bytes", buffer.Length);
