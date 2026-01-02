@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.Extended.ECS;
 using MonoGame.Extended.Input;
 using MonoGame.ImGuiNet;
 using Odyssey.Entities;
@@ -189,11 +190,20 @@ namespace Odyssey.Server
 					// var player = db.LoadPlayer(loginMsg.Username, loginMsg.Password);
 					// for now we'll just always force-make a new player
 					var uid = Guid.NewGuid();
-					var newEntity = new Player() { Username = loginMsg.Username, Password = loginMsg.Password, Id = uid, DisplayName = loginMsg.Username };
-					client.ControllingEntity = newEntity;
-					gameState.Entities.Add(newEntity);
+					var displayName = "[Player]" + loginMsg.Username;
+					var player = new Player()
+					{
+						Username = loginMsg.Username,
+						Password = loginMsg.Password,
+						Id = uid,
+						DisplayName = displayName,
+						Position = new Vector2(10, 10)
+					};
 
-					_ = client.QueueMessage(new LoginResponse() { ClientId = uid });
+					client.ControllingEntity = player;
+					gameState.Entities.Add(player);
+
+					_ = client.QueueMessage(new LoginResponse() { ClientId = uid, DisplayName = displayName, X = player.Position.X, Y = player.Position.Y });
 
 					Logger.Information("[NetworkReceive] Player logged in: {user}", loginMsg.Username);
 					client.IsLoggedIn = true;
@@ -248,24 +258,34 @@ namespace Odyssey.Server
 			base.Draw(gameTime);
 		}
 
+		public void RenderImGuiClient(OdysseyClient client)
+		{
+			if (client?.Connected == true)
+			{
+				ImGui.BulletText(client.ConnectionDetails);
+				if (client.ControllingEntity != null)
+				{
+					ImGui.BulletText($"Display name: \"{client.ControllingEntity.DisplayName}\"");
+					ImGui.BulletText($"Position: {client.ControllingEntity.Position}");
+					ImGui.BulletText($"Velocity: {client.ControllingEntity.Velocity}");
+					ImGui.BulletText($"Acceleration: {client.ControllingEntity.Acceleration}");
+
+					if (client.ControllingEntity is Player p)
+					{
+						ImGui.BulletText($"Username: \"{p.Username}\"");
+						ImGui.BulletText($"Password: \"{p.Password}\"");
+					}
+				}
+			}
+		}
+
 		public void RenderImGui()
 		{
 			ImGui.Text($"Clients={server.ClientCount}");
 			var disconnectList = new List<OdysseyClient>();
 			foreach (var c in server.Clients)
 			{
-				ImGui.BulletText(c.ConnectionDetails);
-				ImGui.Bullet();
-				ImGui.SliderInt("ptrStart", ref c.reader.ptrStart, 0, 1024);
-				ImGui.Bullet();
-				ImGui.SliderInt("ptrEnd", ref c.reader.ptrEnd, 0, 1024);
-				if (c.ControllingEntity != null)
-				{
-					ImGui.BulletText($"{c.ControllingEntity.DisplayName}");
-					ImGui.BulletText($"{c.ControllingEntity.Position}");
-					ImGui.BulletText($"{c.ControllingEntity.Velocity}");
-					ImGui.BulletText($"{c.ControllingEntity.Acceleration}");
-				}
+				RenderImGuiClient(c);
 
 				if (ImGui.Button("Disconnect"))
 				{
@@ -280,6 +300,7 @@ namespace Odyssey.Server
 
 			foreach (var c in disconnectList)
 			{
+				gameState.Entities.RemoveAll(x => x.Id == c.ControllingEntity.Id);
 				server.DisconnectClient(c);
 			}
 		}

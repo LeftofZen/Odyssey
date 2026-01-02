@@ -2,7 +2,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.Extended.ECS;
 using MonoGame.Extended.Input;
+using MonoGame.Extended.Timers;
 using MonoGame.ImGuiNet;
 using Odyssey.Entities;
 using Odyssey.Logging;
@@ -75,13 +77,6 @@ namespace Odyssey.Client
 			GuiRenderer = new ImGuiRenderer(this);
 			GuiRenderer.RebuildFontAtlas();
 
-			player = new Player()
-			{
-				DisplayName = "Left of Zen",
-				Username = "bob",
-				Password = "foo",
-			};
-
 			// click button on imgui
 			//ConnectToServer();
 
@@ -125,7 +120,7 @@ namespace Odyssey.Client
 				renderLog = !renderLog;
 			}
 
-			NetworkSend();
+			NetworkSend(gameTime);
 			NetworkReceive();
 
 			if (player != null)
@@ -146,15 +141,29 @@ namespace Odyssey.Client
 
 			while (client.TryDequeueMessage(out var dmsg))
 			{
-				Logger.Debug("[ClientProcess::NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
+				//Logger.Debug("[ClientProcess::NetworkReceive] {to} {msg}", player.Username, dmsg.hdr.Type);
 				if (dmsg.msg is LoginResponse loginResponse)
 				{
 					// if loginResponse == successful
-					player.Id = loginResponse.ClientId;
-					client.ControllingEntity = player;
-					client.LoginMessageInFlight = false;
-					client.IsLoggedIn = true;
-					Logger.Information("[ClientProcess::NetworkReceive][LoginResponse] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
+					if (loginResponse.ClientId == Guid.Empty)
+					{
+						Logger.Warning("[ClientProcess::NetworkReceive][LoginResponse] Login failed for \"{player}\"", player.Username);
+					}
+					else
+					{
+						player.DisplayName = loginResponse.DisplayName;
+						player.Id = loginResponse.ClientId;
+						player.Position = new()
+						{
+							X = loginResponse.X,
+							Y = loginResponse.Y
+						};
+
+						client.ControllingEntity = player;
+						client.LoginMessageInFlight = false;
+						client.IsLoggedIn = true;
+						Logger.Information("[ClientProcess::NetworkReceive][LoginResponse] \"{player}\" logged in with {id}", player.DisplayName, player.Id);
+					}
 				}
 
 				if (dmsg.msg is LogoutResponse)
@@ -176,17 +185,23 @@ namespace Odyssey.Client
 
 		}
 
-		public void Login()
+		public void Login(string username, string password)
 		{
 			if (!client.IsLoggedIn && !client.LoginMessageInFlight)
 			{
-				_ = client.Login(player.Username, player.Password);
+				player = new Player
+				{
+					Username = username,
+					Password = password
+				};
+
+				_ = client.Login(username, password);
 			}
 		}
 
 		public void Logout()
 		{
-			if (client.IsLoggedIn && !client.LoginMessageInFlight)
+			if (client.IsLoggedIn && !client.LogoutMessageInFlight)
 			{
 				_ = client.Logout(player.Username);
 			}
@@ -194,7 +209,7 @@ namespace Odyssey.Client
 
 		static int count = 0;
 
-		private void NetworkSend()
+		private void NetworkSend(GameTime gameTime)
 		{
 			if (client?.Connected != true)
 			{
@@ -203,23 +218,28 @@ namespace Odyssey.Client
 
 			//Login();
 
-			var clientInput = new InputUpdate()
+			if (player != null)
 			{
-				Mouse = MouseInputData.FromMouseState(Mouse.GetState()),
-				Keyboard = KeyboardInputData.FromKeyboardState(Keyboard.GetState()),
-				Gamepad = GamePadInputData.FromGamePadState(GamePad.GetState(PlayerIndex.One)),
-				InputTimeUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-				ClientId = player.Id,
-			};
-
-			// this limits input sending to only when keys are pressed - not great
-			// for when mouse/ gamepad input happens! but we'll add that later
-			// for now its fine just to send every frame
-			if (Keyboard.GetState().GetPressedKeys().Length > 0)
-			{
-				if (!client.QueueMessage(clientInput))
+				var clientInput = new InputUpdate()
 				{
-					Logger.Error("[ClientProcess::NetworkSend] Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
+					Mouse = MouseInputData.FromMouseState(Mouse.GetState()),
+					Keyboard = KeyboardInputData.FromKeyboardState(Keyboard.GetState()),
+					Gamepad = GamePadInputData.FromGamePadState(GamePad.GetState(PlayerIndex.One)),
+					InputTimeUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+					ClientId = player.Id,
+				};
+
+				player?.Update(clientInput, gameTime);
+
+				// this limits input sending to only when keys are pressed - not great
+				// for when mouse/ gamepad input happens! but we'll add that later
+				// for now its fine just to send every frame
+				if (Keyboard.GetState().GetPressedKeys().Length > 0)
+				{
+					if (!client.QueueMessage(clientInput))
+					{
+						Logger.Error("[ClientProcess::NetworkSend] Couldn't send message: {type}", nameof(NetworkMessageType.InputUpdate));
+					}
 				}
 			}
 
@@ -323,12 +343,53 @@ namespace Odyssey.Client
 			base.Draw(gameTime);
 		}
 
-		public void RenderImGui()
+		public static void RenderImGuiPlayer(Player player)
 		{
-			if (client != null)
+			if (player != null)
+			{
+				ImGui.BulletText($"Id: {player.Id}");
+				ImGui.BulletText($"Username: \"{player.Username}\"");
+				ImGui.BulletText($"Password: \"{player.Password}\"");
+
+				if (player.DisplayName != null)
+				{
+					ImGui.BulletText($"Display name: \"{player.DisplayName}\"");
+				}
+				ImGui.BulletText($"Position: {player.Position}");
+			}
+		}
+
+		string loginUsername = string.Empty;
+		string loginPassword = string.Empty;
+
+		public void RenderImGuiClient(OdysseyClient client)
+		{
+			if (client?.Connected == true)
 			{
 				ImGui.BulletText(client.ConnectionDetails);
+				if (client.ControllingEntity != null)
+				{
+					ImGui.BulletText(client.ControllingEntity.Id.ToString());
+				}
+
+				_ = ImGui.InputText("Username", ref loginUsername, 100);
+				_ = ImGui.InputText("Password", ref loginPassword, 100);
+
+				if (ImGui.Button("Login"))
+				{
+					Login(loginUsername, loginPassword);
+				}
+				if (ImGui.Button("Logout"))
+				{
+					Logout();
+				}
 			}
+		}
+
+		public void RenderImGui()
+		{
+			RenderImGuiClient(client);
+			RenderImGuiPlayer(player);
 
 			if (ImGui.Button("Connect"))
 			{
@@ -343,17 +404,6 @@ namespace Odyssey.Client
 				ClearLogs();
 			}
 
-			if (client?.Connected == true)
-			{
-				if (ImGui.Button("Login"))
-				{
-					Login();
-				}
-				if (ImGui.Button("Logout"))
-				{
-					Logout();
-				}
-			}
 		}
 	}
 }
