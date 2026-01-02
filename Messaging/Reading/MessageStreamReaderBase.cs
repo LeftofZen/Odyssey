@@ -1,30 +1,26 @@
 ﻿using Odyssey.Messaging;
 using Serilog;
+using System.Buffers;
 using System.Diagnostics;
+using System.IO.Pipelines;
 
 namespace Messaging.Reading
 {
 
-	public class MessageStreamReaderBase
+	public class MessageStreamReaderBase : IDisposable
 	{
-		private readonly BufferedStream bs;
-
-		private readonly byte[] cbuf;
-		public int ptrStart = 0;
-		public int ptrEnd = 0; // exclusive
+		private readonly PipeReader pipeReader;
+		private bool disposed = false;
 
 		public int MaxMsgSize { get; init; }
 		public const int DefaultMaxMsgSize = 1024;
 		public const int HeaderSize = 8;
 		public Queue<(Header hdr, byte[] msg)> DelimitedMessageQueue { get; init; } = new();
 
-		private int DataAvailable => ptrEnd - ptrStart;
-
 		public MessageStreamReaderBase(Stream stream, int maxMsgSize = DefaultMaxMsgSize)
 		{
 			MaxMsgSize = maxMsgSize;
-			bs = new BufferedStream(stream, MaxMsgSize);
-			cbuf = new byte[MaxMsgSize];
+			pipeReader = PipeReader.Create(stream, new StreamPipeReaderOptions(leaveOpen: true));
 		}
 
 		public void Update()
@@ -45,100 +41,105 @@ namespace Messaging.Reading
 		{
 			Log.Verbose("[MessageStreamReaderBase::UpdateInternal]");
 
-			// FIRST: Compact the buffer if there's unconsumed data not at the start
-			if (ptrStart > 0 && DataAvailable > 0)
-			{
-				Array.ConstrainedCopy(cbuf, ptrStart, cbuf, 0, DataAvailable);
-				ptrEnd = DataAvailable;
-				ptrStart = 0;
-			}
-			else if (ptrStart > 0)
-			{
-				// No data left, reset pointers
-				ptrStart = 0;
-				ptrEnd = 0;
-			}
+			// Read from the pipe
+			// Note: Using GetAwaiter().GetResult() to maintain synchronous API contract while avoiding .Result deadlock risks
+			var readResult = pipeReader.ReadAsync().AsTask().GetAwaiter().GetResult();
+			var buffer = readResult.Buffer;
 
-			// SECOND: Read new data from stream into available buffer space
-			int spaceAvailable = cbuf.Length - ptrEnd;
-			if (spaceAvailable > 0)
+			Log.Verbose("[MessageStreamReaderBase::UpdateInternal] Read buffer with {bytes} bytes", buffer.Length);
+
+			// Process all complete messages in the buffer
+			SequencePosition consumed = buffer.Start;
+			SequencePosition examined = buffer.End;
+
+			while (TryReadMessage(buffer, out var position, out var header, out var messageBytes))
 			{
-				var read = bs.Read(cbuf, ptrEnd, Math.Min(spaceAvailable, 256));
-				ptrEnd += read;
-				
-				if (read > 0)
+				if (header.Type == 0 || header.Length == 0)
 				{
-					Log.Verbose("[MessageStreamReaderBase::UpdateInternal] Read {bytes} bytes from stream, buffer now has {available} bytes", read, DataAvailable);
-				}
-			}
-			else
-			{
-				Log.Warning("[MessageStreamReaderBase::UpdateInternal] Buffer full with no space to read more data");
-			}
-
-			var rom = new ReadOnlyMemory<byte>(cbuf);
-
-			// THIRD: Process buffer into as many complete messages as possible
-			while (true)
-			{
-				if (DataAvailable >= HeaderSize)
-				{
-					// read header
-					var type = BitConverter.ToUInt32(rom.Slice(ptrStart, 4).Span);
-
-					if (type == 0)
-					{
-						// weird empty data?
-						ptrStart += 4;
-						break;
-					}
-
-					var length = BitConverter.ToUInt32(rom.Slice(ptrStart + 4, 4).Span);
-					if (length == 0)
-					{
-						// weird empty data?
-						ptrStart += 4;
-						break;
-					}
-
-					if (DataAvailable >= HeaderSize + length)
-					{
-						var msgBytes = rom.Slice(ptrStart + HeaderSize, (int)length);
-
-						if (type == 0 || length == 0)
-						{
-							Debugger.Break();
-							break;
-						}
-
-						// external deserialisation
-						var hdr = new Header() { Type = type, Length = length };
-
-						if (DelimitedMessageQueue.Count > 100)
-						{
-							Log.Warning("MessageStreamReaderBase::UpdateInternal - DelimitedMessageQueue size is {Count}, possible message processing lag", DelimitedMessageQueue.Count);
-							Debugger.Break();
-						}
-
-						DelimitedMessageQueue.Enqueue((hdr, msgBytes.ToArray()));
-						ptrStart += HeaderSize + (int)length;
-						Log.Verbose("[MessageStreamReaderBase::UpdateInternal] Enqueued message type={type} length={length}", type, length);
-					}
-					else
-					{
-						// Not enough data for complete message, wait for more
-						Log.Verbose("[MessageStreamReaderBase::UpdateInternal] Incomplete message: need {needed} bytes, have {available}", HeaderSize + length, DataAvailable);
-						break;
-					}
-				}
-				else
-				{
-					// Not enough data for header, wait for more
+					Debugger.Break();
 					break;
 				}
+
+				if (DelimitedMessageQueue.Count > 100)
+				{
+					Log.Warning("MessageStreamReaderBase::UpdateInternal - DelimitedMessageQueue size is {Count}, possible message processing lag", DelimitedMessageQueue.Count);
+					Debugger.Break();
+				}
+
+				DelimitedMessageQueue.Enqueue((header, messageBytes));
+				Log.Verbose("[MessageStreamReaderBase::UpdateInternal] Enqueued message type={type} length={length}", header.Type, header.Length);
+
+				// Advance the buffer past the consumed message
+				buffer = buffer.Slice(position);
+				consumed = position;
 			}
 
-			// Note: We don't copy remaining data here anymore - we do it at the start of next Update()
+			// Tell the PipeReader how much of the buffer we consumed
+			pipeReader.AdvanceTo(consumed, examined);
+		}
+
+		private bool TryReadMessage(ReadOnlySequence<byte> buffer, out SequencePosition position, out Header header, out byte[] messageBytes)
+		{
+			position = buffer.Start;
+			header = default;
+			messageBytes = Array.Empty<byte>();
+
+			// Need at least header size
+			if (buffer.Length < HeaderSize)
+			{
+				Log.Verbose("[MessageStreamReaderBase::TryReadMessage] Not enough data for header: have {available}", buffer.Length);
+				return false;
+			}
+
+			// Read header
+			Span<byte> headerBytes = stackalloc byte[HeaderSize];
+			buffer.Slice(0, HeaderSize).CopyTo(headerBytes);
+
+			var type = BitConverter.ToUInt32(headerBytes.Slice(0, 4));
+			var length = BitConverter.ToUInt32(headerBytes.Slice(4, 4));
+
+			if (type == 0 || length == 0)
+			{
+				// Skip invalid data
+				Log.Verbose("[MessageStreamReaderBase::TryReadMessage] Invalid header: type={type} length={length}", type, length);
+				return false;
+			}
+
+			// Check if we have the full message
+			var totalMessageSize = HeaderSize + (int)length;
+			if (buffer.Length < totalMessageSize)
+			{
+				Log.Verbose("[MessageStreamReaderBase::TryReadMessage] Incomplete message: need {needed} bytes, have {available}", totalMessageSize, buffer.Length);
+				return false;
+			}
+
+			// Extract the message bytes
+			messageBytes = buffer.Slice(HeaderSize, (int)length).ToArray();
+			header = new Header() { Type = type, Length = length };
+
+			// Return the position after this message
+			position = buffer.GetPosition(totalMessageSize);
+			return true;
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!disposed)
+			{
+				if (disposing)
+				{
+					// Complete the PipeReader to release any resources
+					// This does not dispose the underlying stream as we specified leaveOpen: true
+					pipeReader.Complete();
+				}
+				disposed = true;
+			}
 		}
 	}
 }

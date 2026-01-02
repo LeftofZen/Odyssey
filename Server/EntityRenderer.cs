@@ -11,8 +11,13 @@ namespace Odyssey.Server
 	{
 		public static void Draw(SpriteBatch sb, IEntity entity, float scale)
 		{
-			sb.FillRectangle(new RectangleF(entity.Position.X * scale, entity.Position.X * scale, entity.GetSize().X * scale, entity.GetSize().Y * scale), Color.Chocolate);
-			sb.DrawDebugStringCentered(GameServices.Fonts.First().Value, entity.DisplayName, entity.Position, Color.White);
+			// minimap
+			sb.FillRectangle(new RectangleF(entity.Position.X * scale, entity.Position.Y * scale, entity.GetSize().X * scale, entity.GetSize().Y * scale), Color.Chocolate);
+
+			// player
+			var stringPos = entity.Position + new Vector2(entity.GetSize().X / 2f, -8);
+			sb.DrawDebugStringCentered(GameServices.Fonts.First().Value, entity.DisplayName, stringPos, Color.White);
+			sb.DrawRectangle(new RectangleF(entity.Position, entity.GetSize()), Color.Blue);
 		}
 	}
 }
