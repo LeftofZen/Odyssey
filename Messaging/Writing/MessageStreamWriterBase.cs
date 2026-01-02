@@ -50,8 +50,8 @@ namespace Messaging.Writing
 				Log.Debug("[MessageStreamWriterBase::Update] {pendingMessages}", PendingMessages);
 				
 				// Flush the pipe to send data
-				// Note: Using .Result to maintain synchronous API contract
-				pipeWriter.FlushAsync().AsTask().Wait();
+				// Use GetAwaiter().GetResult() to maintain synchronous API contract
+				pipeWriter.FlushAsync().GetAwaiter().GetResult();
 				
 				PendingMessages = 0;
 			}
