@@ -61,9 +61,12 @@ namespace Odyssey.Messaging
 	public struct LoginResponse : IMessage, IClientId
 	{
 		public uint Type => (uint)NetworkMessageType.LoginResponse;
-		public Guid ClientId { get; init; }
 		public bool RequiresLogin => false;
-	}
+		public Guid ClientId { get; init; }
+		public string DisplayName { get; init; }
+		public float X { get; init; }
+		public float Y { get; init; }
+}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	[Serializable]
