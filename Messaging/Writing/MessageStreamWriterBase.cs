@@ -21,6 +21,11 @@ namespace Messaging.Writing
 
 		public void Enqueue(uint type, byte[] msg)
 		{
+			if (disposed)
+			{
+				return;
+			}
+
 			Log.Debug("[MessageStreamWriterBase::Enqueue] {type}", type);
 
 			var typeBytes = BitConverter.GetBytes(type);
@@ -45,6 +50,11 @@ namespace Messaging.Writing
 
 		public void Update()
 		{
+			if (disposed)
+			{
+				return;
+			}
+
 			if (PendingMessages > 0)
 			{
 				Log.Debug("[MessageStreamWriterBase::Update] {pendingMessages}", PendingMessages);

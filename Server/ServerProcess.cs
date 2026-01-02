@@ -255,10 +255,10 @@ namespace Odyssey.Server
 			foreach (var c in server.Clients)
 			{
 				ImGui.BulletText(c.ConnectionDetails);
-				ImGui.Bullet();
-				ImGui.SliderInt("ptrStart", ref c.reader.ptrStart, 0, 1024);
-				ImGui.Bullet();
-				ImGui.SliderInt("ptrEnd", ref c.reader.ptrEnd, 0, 1024);
+				//ImGui.Bullet();
+				//ImGui.SliderInt("ptrStart", ref c.reader.ptrStart, 0, 1024);
+				//ImGui.Bullet();
+				//ImGui.SliderInt("ptrEnd", ref c.reader.ptrEnd, 0, 1024);
 				if (c.ControllingEntity != null)
 				{
 					ImGui.BulletText($"{c.ControllingEntity.DisplayName}");
