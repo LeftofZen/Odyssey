@@ -186,9 +186,9 @@ namespace Odyssey.Client
 				if (dmsg.msg is GameStateUpdate gameStateUpdate)
 				{
 					// copy map
-					var world = gameStateUpdate.GameState;
-					gameState.Map.SetData(world.Map);
-					Logger.Information("[ClientProcess::NetworkReceive][GameStateUpdate] received new game state with {numEntities} entities", gameState.Entities.Count);
+					var world = gameStateUpdate;
+					//gameState.Map.SetData(world.Map);
+					Logger.Information("[ClientProcess::NetworkReceive][GameStateUpdate] received new game state {width} {height} {tilesize}", world.Width, world.Height, world.TileSize);
 				}
 			}
 		}

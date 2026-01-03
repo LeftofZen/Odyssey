@@ -136,14 +136,14 @@ namespace Odyssey.Server
 
 		private void NetworkSend()
 		{
-			var worldUpdate = new WorldUpdate()
-			{
-				Width = gameState.Map.Width,
-				Height = gameState.Map.Height,
-				TileSize = gameState.Map.TileSize,
-				Map = gameState.Map.GetData()
-			};
-			server.SendMessageToAllClients(new GameStateUpdate() { GameState = worldUpdate });
+			//var worldUpdate = new WorldUpdate()
+			//{
+			//	Width = gameState.Map.Width,
+			//	Height = gameState.Map.Height,
+			//	TileSize = gameState.Map.TileSize,
+			//	//Map = gameState.Map.GetData()
+			//};
+			server.SendMessageToAllClients(new GameStateUpdate() { Width = gameState.Map.Width, Height = gameState.Map.Height, TileSize = gameState.Map.TileSize });
 
 			// foreach client, send the player info to each other client
 			//foreach (var e in gameState.Entities)

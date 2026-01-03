@@ -3,17 +3,14 @@ using Serilog;
 
 namespace Messaging.Writing
 {
-
-	public class MessageStreamWriter<T> : MessageStreamWriterBase where T : IMessage
+	public class MessageStreamWriter<T>(Stream stream, IMessageStreamSerialiser<T> serialiser) 
+		: ByteStreamWriter(stream) where T : IMessage
 	{
-		private IMessageStreamSerialiser<T> serialiser;
-
-		public MessageStreamWriter(Stream stream, IMessageStreamSerialiser<T> serialiser, int maxMsgSize = DefaultMaxMsgSize) 
-			: base(stream, maxMsgSize) => this.serialiser = serialiser;
+		private readonly IMessageStreamSerialiser<T> serialiser = serialiser;
 
 		public void Enqueue(T msg)
 		{
-			Log.Debug("[MessageStreamWriter::Enqueue] {type}", msg.Type);
+			Log.Verbose("[MessageStreamWriter::Enqueue] {type}", msg.Type);
 
 			var s = serialiser.Serialise(msg);
 			Enqueue(msg.Type, s);

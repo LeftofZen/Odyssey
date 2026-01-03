@@ -1,13 +1,17 @@
 ﻿using Odyssey.Messaging;
+using Serilog;
 
 namespace Messaging.Reading
 {
-	public class MessageStreamReader<T> : MessageStreamReaderBase where T : IMessage
+	public class MessageStreamReader<T>(Stream stream, IMessageStreamDeserialiser<T> deserialiser) 
+		: ByteStreamReader(stream) where T : IMessage
 	{
-		private IMessageStreamDeserialiser<T> deserialiser;
+		private readonly IMessageStreamDeserialiser<T> deserialiser = deserialiser;
 
 		public bool TryDequeue(out (Header hdr, T msg) dmsg)
 		{
+			Log.Verbose("[MessageStreamReader::TryDequeue]");
+
 			if (DelimitedMessageQueue.TryDequeue(out var bmsg))
 			{
 				if (bmsg.hdr.Type == 0)
@@ -23,8 +27,5 @@ namespace Messaging.Reading
 			dmsg = default;
 			return false;
 		}
-
-		public MessageStreamReader(Stream stream, IMessageStreamDeserialiser<T> deserialiser, int maxMsgSize = 1024) 
-			: base(stream, maxMsgSize) => this.deserialiser = deserialiser;
 	}
 }

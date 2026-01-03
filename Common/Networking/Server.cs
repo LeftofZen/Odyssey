@@ -104,9 +104,12 @@ namespace Odyssey.Networking
 			{
 				if (c.ControllingEntity != null && c.ControllingEntity.Id != exceptedEntity.Id)
 				{
-					if (!c.QueueMessage(message))
+					if (!message.RequiresLogin || c.IsLoggedIn)
 					{
-						c.Disconnect();
+						if (!c.QueueMessage(message))
+						{
+							c.Disconnect();
+						}
 					}
 				}
 			}

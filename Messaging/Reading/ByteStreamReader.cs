@@ -6,51 +6,46 @@ using System.IO.Pipelines;
 
 namespace Messaging.Reading
 {
-
-	public class MessageStreamReaderBase : IDisposable
+	public class ByteStreamReader(Stream stream) : IDisposable
 	{
-		private readonly PipeReader pipeReader;
+		private readonly PipeReader pipeReader = PipeReader.Create(stream, new StreamPipeReaderOptions(leaveOpen: true));
 		private bool disposed = false;
 
-		public int MaxMsgSize { get; init; }
-		public const int DefaultMaxMsgSize = 1024;
-		public const int HeaderSize = 8;
 		public Queue<(Header hdr, byte[] msg)> DelimitedMessageQueue { get; init; } = new();
-
-		public MessageStreamReaderBase(Stream stream, int maxMsgSize = DefaultMaxMsgSize)
-		{
-			MaxMsgSize = maxMsgSize;
-			pipeReader = PipeReader.Create(stream, new StreamPipeReaderOptions(leaveOpen: true));
-		}
 
 		public void Update()
 		{
+			if (disposed)
+			{
+				return;
+			}
+
+			Log.Verbose("[ByteStreamReader::Update]");
+			
 			try
 			{
-				Log.Verbose("[MessageStreamReaderBase::Update]");
 				UpdateInternal();
-				Log.Verbose("[MessageStreamReaderBase::UpdateInternal] end");
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, "Couldn't read from stream");
+				Log.Error(ex, "[ByteStreamReader::Update] Couldn't read from stream");
 			}
 		}
 
 		private void UpdateInternal()
 		{
-			Log.Verbose("[MessageStreamReaderBase::UpdateInternal]");
+			Log.Verbose("[ByteStreamReader::UpdateInternal]");
 
 			// Read from the pipe
 			// Note: Using GetAwaiter().GetResult() to maintain synchronous API contract while avoiding .Result deadlock risks
 			var readResult = pipeReader.ReadAsync().AsTask().GetAwaiter().GetResult();
 			var buffer = readResult.Buffer;
 
-			Log.Verbose("[MessageStreamReaderBase::UpdateInternal] Read buffer with {bytes} bytes", buffer.Length);
+			Log.Verbose("[ByteStreamReader::UpdateInternal] Read buffer with {bytes} bytes", buffer.Length);
 
 			// Process all complete messages in the buffer
-			SequencePosition consumed = buffer.Start;
-			SequencePosition examined = buffer.End;
+			var consumed = buffer.Start;
+			var examined = buffer.End;
 
 			while (TryReadMessage(buffer, out var position, out var header, out var messageBytes))
 			{
@@ -62,7 +57,7 @@ namespace Messaging.Reading
 
 				if (DelimitedMessageQueue.Count > 100)
 				{
-					Log.Warning("MessageStreamReaderBase::UpdateInternal - DelimitedMessageQueue size is {Count}, possible message processing lag", DelimitedMessageQueue.Count);
+					Log.Warning("ByteStreamReader::UpdateInternal - DelimitedMessageQueue size is {Count}, possible message processing lag", DelimitedMessageQueue.Count);
 					Debugger.Break();
 				}
 
@@ -82,39 +77,39 @@ namespace Messaging.Reading
 		{
 			position = buffer.Start;
 			header = default;
-			messageBytes = Array.Empty<byte>();
+			messageBytes = [];
 
 			// Need at least header size
-			if (buffer.Length < HeaderSize)
+			if (buffer.Length < Constants.DefaultMaxMessageSize)
 			{
-				Log.Verbose("[MessageStreamReaderBase::TryReadMessage] Not enough data for header: have {available}", buffer.Length);
+				Log.Verbose("[ByteStreamReader::TryReadMessage] Not enough data for header: have {available}", buffer.Length);
 				return false;
 			}
 
 			// Read header
-			Span<byte> headerBytes = stackalloc byte[HeaderSize];
-			buffer.Slice(0, HeaderSize).CopyTo(headerBytes);
+			Span<byte> headerBytes = stackalloc byte[Constants.DefaultMaxMessageSize];
+			buffer.Slice(0, Constants.DefaultMaxMessageSize).CopyTo(headerBytes);
 
-			var type = BitConverter.ToUInt32(headerBytes.Slice(0, 4));
+			var type = BitConverter.ToUInt32(headerBytes[..4]);
 			var length = BitConverter.ToUInt32(headerBytes.Slice(4, 4));
 
 			if (type == 0 || length == 0)
 			{
 				// Skip invalid data
-				Log.Verbose("[MessageStreamReaderBase::TryReadMessage] Invalid header: type={type} length={length}", type, length);
+				Log.Verbose("[ByteStreamReader::TryReadMessage] Invalid header: type={type} length={length}", type, length);
 				return false;
 			}
 
 			// Check if we have the full message
-			var totalMessageSize = HeaderSize + (int)length;
+			var totalMessageSize = Constants.DefaultMaxMessageSize + (int)length;
 			if (buffer.Length < totalMessageSize)
 			{
-				Log.Verbose("[MessageStreamReaderBase::TryReadMessage] Incomplete message: need {needed} bytes, have {available}", totalMessageSize, buffer.Length);
+				Log.Verbose("[ByteStreamReader::TryReadMessage] Incomplete message: need {needed} bytes, have {available}", totalMessageSize, buffer.Length);
 				return false;
 			}
 
 			// Extract the message bytes
-			messageBytes = buffer.Slice(HeaderSize, (int)length).ToArray();
+			messageBytes = buffer.Slice(Constants.DefaultMaxMessageSize, (int)length).ToArray();
 			header = new Header() { Type = type, Length = length };
 
 			// Return the position after this message
@@ -138,6 +133,7 @@ namespace Messaging.Reading
 					// This does not dispose the underlying stream as we specified leaveOpen: true
 					pipeReader.Complete();
 				}
+
 				disposed = true;
 			}
 		}

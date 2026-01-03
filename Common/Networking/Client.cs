@@ -213,7 +213,7 @@ namespace Odyssey.Networking
 					//writer.Enqueue(new KeepAliveMessage() { ClientId = ControllingEntity?.Id ?? Guid.Empty, Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds() });
 				}
 
-				writer.Update();
+				writer.UpdateAsync().GetAwaiter().GetResult();
 
 				// if we were able to send a message, we are now connected as far as tcp is concerned
 				_connected = true;
@@ -235,6 +235,12 @@ namespace Odyssey.Networking
 				Log.Error("[Client::QueueMessage] Message writer is null");
 				return false;
 			}
+
+			//if (message.RequiresLogin && !IsLoggedIn)
+			//{
+			//	Log.Warning("[Client::QueueMessage] Message requires login but client is not logged in");
+			//	return false;
+			//}
 
 			writer.Enqueue(message);
 			return true;

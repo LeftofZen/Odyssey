@@ -56,14 +56,14 @@ namespace Messaging
 		public void Simplex_Single()
 		{
 			// arrange
-			var writer = new MessageStreamWriterBase(server.GetStream());
-			var reader = new MessageStreamReaderBase(client.GetStream());
+			var writer = new ByteStreamWriter(server.GetStream());
+			var reader = new ByteStreamReader(client.GetStream());
 
 			// act - write a message from server to client
 			const uint type = 16;
 			var msg = new byte[] { 0, 1, 2, 5 };
 			writer.Enqueue(type, msg);
-			writer.Update();
+			writer.UpdateAsync().GetAwaiter().GetResult();
 
 			// wait some time, could do async here
 			Thread.Sleep(100);
@@ -85,8 +85,9 @@ namespace Messaging
 		public void Simplex_Multiple()
 		{
 			// arrange
-			var writer = new MessageStreamWriterBase(server.GetStream());
-			var reader = new MessageStreamReaderBase(client.GetStream());
+			var writer = new ByteStreamWriter(server.GetStream());
+			var reader = new ByteStreamReader(client.GetStream());
+
 			// act - write a message from server to client
 			const uint type1 = 16;
 			var msg1 = new byte[] { 0, 1, 2, 5 };
@@ -100,7 +101,7 @@ namespace Messaging
 			var msg3 = new byte[] { 9, 8, 6, 4, 3 };
 			writer.Enqueue(type3, msg3);
 
-			writer.Update();
+			writer.UpdateAsync().GetAwaiter().GetResult();
 			Thread.Sleep(100);
 			reader.Update(); // don't need this update, but its good to test updating in the middle of the stream
 
@@ -108,7 +109,7 @@ namespace Messaging
 			var msg4 = new byte[] { 1, 1, 1, 2, 1, 1, 1, 99 };
 			writer.Enqueue(type4, msg4);
 
-			writer.Update();
+			writer.UpdateAsync().GetAwaiter().GetResult();
 			Thread.Sleep(100);
 			reader.Update();
 
@@ -138,22 +139,23 @@ namespace Messaging
 		public void Duplex()
 		{
 			// arrange
-			var clientReader = new MessageStreamReaderBase(client.GetStream());
-			var clientWriter = new MessageStreamWriterBase(client.GetStream());
-			var serverReader = new MessageStreamReaderBase(server.GetStream());
-			var serverWriter = new MessageStreamWriterBase(server.GetStream());
+			var clientReader = new ByteStreamReader(client.GetStream());
+			var clientWriter = new ByteStreamWriter(client.GetStream());
+
+			var serverReader = new ByteStreamReader(server.GetStream());
+			var serverWriter = new ByteStreamWriter(server.GetStream());
 
 			// act - write on server
 			const uint type1 = 16;
 			var msg1 = new byte[] { 0, 1, 2, 5 };
 			serverWriter.Enqueue(type1, msg1);
-			serverWriter.Update();
+			serverWriter.UpdateAsync().GetAwaiter().GetResult();
 
 			// act - write on client
 			const uint type2 = 7;
 			var msg2 = new byte[] { 37, 14, 57, 75, 22 };
 			clientWriter.Enqueue(type2, msg2);
-			clientWriter.Update();
+			clientWriter.UpdateAsync().GetAwaiter().GetResult();
 
 			// wait some time, could do async here
 			Thread.Sleep(100);

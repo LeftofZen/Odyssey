@@ -29,12 +29,12 @@ namespace Odyssey.Messaging
 	public struct WorldUpdate : IMessage
 	{
 		public uint Type => (uint)NetworkMessageType.WorldUpdate;
-		public bool RequiresLogin => false;
+		public bool RequiresLogin => true;
 
 		public int Width { get; init; }
 		public int Height { get; init; }
 		public int TileSize { get; init; }
-		public double[,] Map { get; init; } // basically just a heightmap
+		//public double[,] Map { get; init; } // basically just a heightmap
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -43,8 +43,10 @@ namespace Odyssey.Messaging
 	public struct GameStateUpdate : IMessage
 	{
 		public uint Type => (uint)NetworkMessageType.GameStateUpdate;
-		public bool RequiresLogin => false;
-		public WorldUpdate GameState { get; init; }
+		public bool RequiresLogin => true;
+		public int Width { get; init; }
+		public int Height { get; init; }
+		public int TileSize { get; init; }
 	}
 
 	[StructLayout(LayoutKind.Sequential, Pack = 1)]
